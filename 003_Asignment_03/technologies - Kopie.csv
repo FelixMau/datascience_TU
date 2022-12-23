@@ -1,0 +1,15 @@
+Carrier;co2_emissions;color
+onshore wind;0.0;#235ebc
+solar;0.0;#f9d002
+nuclear;0.0;#ff9000
+biomass;0.0;#0c6013
+CCGT;0.2;#b20101
+OCGT;0.2;#d35050
+offshore wind;0.0;#74c6f2
+lignite;0.41;#9e5a01
+oil;0.27;#262626
+coal;0.34;#707070
+geothermal;0.03;#ba91b1
+hydro reservoir;0.0;#08ad97
+pumped hydro;0.0;#08ad97
+run of river;0.0;#4adbc8
