@@ -1,0 +1,686 @@
+<html>
+<head>
+<title>Assignment_03_LNG Terminals & Electricity Markets_save.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Assignment_03_LNG Terminals & Electricity Markets_save.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+</span><span class="s1"># Assignment 3 - LNG Terminals &amp; Electricity Markets 
+## Task 1: LNG Terminals [30 points] 
+#### Required Tools: geopandas, pandas, matplotlib, cartopy 
+##### In this task, you will analyse data from the Global Gas Infrastructure Tracker published by Global Energy Monitor. This dataset includes data on liquefied natural gas (LNG) import and export terminals around the globe. You can find the dataset here: 
+##### File: https://tubcloud.tu-berlin.de/s/QWXsKqHTnfWxRzj/download/GEM-GGIT-LNG-Terminals-July2022.xlsx 
+##### [2 points] (a) Read the Excel table into a pandas.DataFrame using the pd.read_excel function. Make sure to identify the following strings as NaN values when reading in the file: “Unknown”, “TBD”, “–”, ” “. 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">pandas </span><span class="s2">as </span><span class="s1">pd</span>
+<span class="s2">import </span><span class="s1">geopandas </span><span class="s2">as </span><span class="s1">gpd</span>
+<span class="s0">#import numpy as np</span>
+<span class="s2">import </span><span class="s1">matplotlib.pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+<span class="s0">#from shapely.geometry import Point</span>
+<span class="s2">import </span><span class="s1">cartopy</span>
+<span class="s2">import </span><span class="s1">cartopy.crs </span><span class="s2">as </span><span class="s1">ccrs</span>
+
+<span class="s0">#import warnings</span>
+
+<span class="s0">#%% 
+</span><span class="s1">df = pd.read_excel(</span><span class="s3">&quot;GEM-GGIT-LNG-Terminals-July2022.xlsx&quot;</span><span class="s2">, </span><span class="s1">na_values=[</span><span class="s3">&quot;nan&quot;</span><span class="s2">, </span><span class="s3">&quot;Nan&quot;</span><span class="s2">, </span><span class="s3">&quot;Unknown&quot;</span><span class="s2">, </span><span class="s3">&quot;TBD&quot;</span><span class="s2">, </span><span class="s3">&quot;–&quot;</span><span class="s2">, </span><span class="s3">&quot;&quot;</span><span class="s2">, </span><span class="s3">' '</span><span class="s2">, </span><span class="s3">'nan'</span><span class="s2">, </span><span class="s3">'--'</span><span class="s1">]</span><span class="s2">, </span><span class="s1">index_col = </span><span class="s3">&quot;ComboID&quot;</span><span class="s2">,</span>
+                  <span class="s1">thousands=</span><span class="s3">&quot;,&quot;</span><span class="s1">)</span>
+<span class="s1">df.head(</span><span class="s4">20</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (b) Using the coordinates included in the dataset, build a geopandas.GeoDataFrame. 
+</span><span class="s0">#%% 
+</span><span class="s1">gdf = gpd.GeoDataFrame(</span>
+    <span class="s1">df</span><span class="s2">, </span><span class="s1">geometry=gpd.points_from_xy(df.Longitude</span><span class="s2">, </span><span class="s1">df.Latitude))</span>
+<span class="s1">gdf.head(</span><span class="s4">2</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (c) Convert the capacities given in Mtpa (mega tonnes per year) into TWh and store the resulting values in a new column “CapacityInTWh”. 
+</span><span class="s0">#%% 
+# Using 13 kWh/kg &lt;-&gt; 13 MWh/t &lt;-&gt; 13 *10^6 MWh/Mt &lt;-&gt; 13 TWh/Mt</span>
+<span class="s1">gdf.loc[:</span><span class="s2">, </span><span class="s3">&quot;CapacityInTWh&quot;</span><span class="s1">] = gdf.CapacityInMtpa.apply(</span><span class="s2">lambda </span><span class="s1">x: x*</span><span class="s4">13</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (d) How many LNG terminals are included in the dataset and what is the median capacity in TWh? 
+</span><span class="s0">#%% 
+</span><span class="s1">number_of_terminals = len(gdf.groupby(</span><span class="s3">&quot;TerminalID&quot;</span><span class="s1">).groups)</span>
+<span class="s1">print(</span><span class="s3">f&quot;There are </span><span class="s2">{</span><span class="s1">number_of_terminals</span><span class="s2">} </span><span class="s3">Terminals if every terminal has a unique ID&quot;</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">f&quot;The Terminals have a median capacity of </span><span class="s2">{</span><span class="s1">gdf.CapacityInTWh.mean()</span><span class="s2">} </span><span class="s3">TWh/year&quot;</span><span class="s1">)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (e) What share of import terminals is floating? 
+</span><span class="s0">#%% 
+</span><span class="s1">import_terminals = gdf.groupby([</span><span class="s3">&quot;Import/Export&quot;</span><span class="s1">]).get_group(</span><span class="s3">'Import'</span><span class="s1">)</span>
+<span class="s1">number_import = int(len(import_terminals))</span>
+<span class="s1">import_floating = gdf.groupby([</span><span class="s3">&quot;Import/Export&quot;</span><span class="s2">, </span><span class="s3">&quot;Floating&quot;</span><span class="s1">]).get_group((</span><span class="s3">'Import'</span><span class="s2">, </span><span class="s3">'yes'</span><span class="s1">))</span>
+<span class="s1">number_of_import_floating = int(len(import_floating))</span>
+<span class="s1">print(</span><span class="s3">f&quot;</span><span class="s2">{</span><span class="s1">number_of_import_floating*</span><span class="s4">100</span><span class="s1">/number_import</span><span class="s2">}</span><span class="s3">% of import Terminals in the Dataset are floating Terminals&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (f) Print the information of the oldest operating LNG terminal. In which country is it located? 
+</span><span class="s0">#%% 
+</span><span class="s1">oldest = gdf.loc[gdf.sort_values(by = </span><span class="s3">&quot;StartYear1&quot;</span><span class="s1">).index[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s1">:]</span>
+<span class="s1">print(</span><span class="s3">f&quot;The oldest LNG Terminal is located in </span><span class="s2">{</span><span class="s1">oldest.Country</span><span class="s2">} </span><span class="s3">with following 'information':&quot;</span><span class="s1">)</span>
+<span class="s1">gdf.loc[gdf.sort_values(by = </span><span class="s3">&quot;StartYear1&quot;</span><span class="s1">).index[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s1">:]</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (g) Create a bar plot outlining the 10 countries with the largest LNG terminal capacity. 
+</span><span class="s0">#%% 
+</span><span class="s1">gdf.groupby(</span><span class="s3">'Country'</span><span class="s1">).agg({</span><span class="s3">'CapacityInTWh'</span><span class="s1">: </span><span class="s3">'sum'</span><span class="s1">}).sort_values(by=</span><span class="s3">&quot;CapacityInTWh&quot;</span><span class="s2">,</span><span class="s1">ascending=</span><span class="s2">False</span><span class="s1">)[:</span><span class="s4">10</span><span class="s1">].plot.bar(ylabel=</span><span class="s3">&quot;LNG Capacity [TWh/a]&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (h) Create a bar plot outlining the LNG terminal capacity per status code. 
+</span><span class="s0">#%% 
+</span><span class="s1">gdf.groupby(</span><span class="s3">'Status'</span><span class="s1">).agg({</span><span class="s3">'CapacityInTWh'</span><span class="s1">: </span><span class="s3">'sum'</span><span class="s1">}).sort_values(by=</span><span class="s3">&quot;CapacityInTWh&quot;</span><span class="s2">,</span><span class="s1">ascending=</span><span class="s2">False</span><span class="s1">)[:</span><span class="s4">10</span><span class="s1">].plot.bar(ylabel=</span><span class="s3">&quot;LNG Capacity [TWh/a]&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (i) Create a table of the German LNG terminals including information on the name, status, capacity, owner, whether it is floating, and sorted by aspired start year. 
+</span><span class="s0">#%% 
+</span><span class="s1">gdf.query(</span><span class="s3">&quot;Country == 'Germany'&quot;</span><span class="s1">).sort_values(by=</span><span class="s3">&quot;StartYear1&quot;</span><span class="s1">).loc[:</span><span class="s2">, </span><span class="s1">(</span><span class="s3">&quot;TerminalName&quot;</span><span class="s2">, </span><span class="s3">&quot;Status&quot;</span><span class="s2">, </span><span class="s3">&quot;CapacityInTWh&quot;</span><span class="s2">, </span><span class="s3">&quot;Owner&quot;</span><span class="s2">, </span><span class="s3">&quot;Floating&quot;</span><span class="s2">, </span><span class="s3">&quot;StartYear1&quot;</span><span class="s2">, </span><span class="s3">&quot;FID&quot;</span><span class="s1">)]</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (j) Create a line chart depicting the number of new LNG termianls per year. Include a vertical line for the year 2022 for orientation. 
+</span><span class="s0">#%% 
+# Grouping Terminals by start year -&gt; Groups represent new Terminals in the year</span>
+<span class="s1">gdf.groupby(</span><span class="s3">'StartYear1'</span><span class="s1">).agg(</span><span class="s2">lambda </span><span class="s1">x: len(x)).TerminalID.plot(ylabel=</span><span class="s3">&quot;New Terminals [1/a]&quot;</span><span class="s2">, </span><span class="s1">xlabel=</span><span class="s3">&quot;Year&quot;</span><span class="s1">)</span>
+<span class="s1">plt.axvline(x=</span><span class="s4">2022</span><span class="s2">, </span><span class="s1">color=</span><span class="s3">'red'</span><span class="s2">, </span><span class="s1">linestyle=</span><span class="s3">'--'</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### [5 points] (k) Write a function that takes an extract of the LNG terminals in the geopandas.GeoDataFrame and plots it with the following characteristics: 
+• Mercator projection with coastlines displayed. 
+ 
+• Marker size proportional to capacity (no legend for size necessary) 
+ 
+• Colors according to status, including a legend. 
+ 
+• Semi-transparent markers (alpha=0.6). 
+</span><span class="s0">#%% 
+</span>
+
+<span class="s2">def </span><span class="s1">plot_map(terminals: gpd.GeoDataFrame):</span>
+    <span class="s1">fig = plt.figure(figsize=(</span><span class="s4">15</span><span class="s2">,</span><span class="s4">15</span><span class="s1">))</span>
+    <span class="s1">terminals.crs=</span><span class="s3">&quot;epsg:4326&quot;</span>
+    <span class="s0"># Manipulating axes to increase readability: </span>
+    <span class="s1">ax = plt.axes(projection=ccrs.Mercator())</span>
+    <span class="s0"># Beatify</span>
+    <span class="s1">ax.coastlines()</span>
+    <span class="s0"># Also adding colors for readability</span>
+    <span class="s1">ax.add_feature(cartopy.feature.OCEAN</span><span class="s2">, </span><span class="s1">color=</span><span class="s3">'azure'</span><span class="s1">)</span>
+    <span class="s1">ax.add_feature(cartopy.feature.LAND</span><span class="s2">, </span><span class="s1">color=</span><span class="s3">'cornsilk'</span><span class="s1">)</span>
+    <span class="s0"># Borders</span>
+    <span class="s1">ax.add_feature(cartopy.feature.BORDERS</span><span class="s2">, </span><span class="s1">color=</span><span class="s3">'grey'</span><span class="s2">, </span><span class="s1">linewidth=</span><span class="s4">0.5</span><span class="s1">)</span>
+    <span class="s1">terminals.to_crs(ccrs.Mercator()).plot(ax = ax</span><span class="s2">,</span>
+                   <span class="s1">column=</span><span class="s3">'Status'</span><span class="s2">,</span>
+                   <span class="s1">markersize=terminals.CapacityInTWh</span><span class="s2">,</span>
+                   <span class="s1">legend=</span><span class="s2">True,</span>
+                   <span class="s1">alpha=</span><span class="s4">.6</span><span class="s2">,</span>
+                         <span class="s1">)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### [5 points] (l) Use the function you created to plot: 
+• all LNG terminals 
+ 
+• only LNG import terminals 
+ 
+• only LNG export terminals 
+ 
+• only future LNG import terminals (i.e. start year after 2022) 
+ 
+• only floating LNG terminals 
+</span><span class="s0">#%% 
+</span><span class="s1">print(</span><span class="s3">&quot;All LNG Terminals:&quot;</span><span class="s1">)</span>
+<span class="s1">plot_map(gdf)</span>
+<span class="s2">import </span><span class="s1">warnings</span>
+<span class="s1">warnings.filterwarnings(action=</span><span class="s3">&quot;ignore&quot;</span><span class="s1">)</span>
+<span class="s0">#%% 
+</span><span class="s1">gdf.rename(columns = {</span><span class="s3">'Import/Export'</span><span class="s1">:</span><span class="s3">'IE'</span><span class="s1">}</span><span class="s2">, </span><span class="s1">inplace = </span><span class="s2">True</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s3">&quot;Only import terminals:&quot;</span><span class="s1">)</span>
+<span class="s1">plot_map(gdf.query(</span><span class="s3">&quot;IE == 'Import'&quot;</span><span class="s1">))</span>
+<span class="s0">#%% 
+</span><span class="s1">print(</span><span class="s3">&quot;Only Export terminals:&quot;</span><span class="s1">)</span>
+<span class="s1">plot_map(gdf.query(</span><span class="s3">&quot;IE == 'Export'&quot;</span><span class="s1">))</span>
+<span class="s0">#%% 
+</span><span class="s1">print(</span><span class="s3">&quot;Only terminals with higher start year than 2022:&quot;</span><span class="s1">)</span>
+<span class="s1">plot_map(gdf.query(</span><span class="s3">&quot;StartYear1 &gt; 2022&quot;</span><span class="s1">))</span>
+<span class="s0">#%% 
+</span><span class="s1">print(</span><span class="s3">&quot;Only floating terminals:&quot;</span><span class="s1">)</span>
+<span class="s1">plot_map(gdf.query(</span><span class="s3">&quot;Floating == 'yes'&quot;</span><span class="s1">)) </span><span class="s0"># There must be some issue either in projection, coordinates or the Dataset.</span>
+<span class="s0"># I expect Floating Terminals to be on Water(Ocean), yet some seem to be on Land'</span>
+<span class="s0">#%% md 
+</span><span class="s1">## Task 2: Merit Order [42 points] 
+### Required Tools: pandas, matplotlib 
+#### In this task you are asked to build and plot merit order curves for the German day-ahead electricity market given a dataset on operational power plants (link 1) and some additinal carrier-specific data (link 2): 
+##### • https://tubcloud.tu-berlin.de/s/P9qPttqFg3ciKEy/download/powerplants.csv 
+##### • https://tubcloud.tu-berlin.de/s/XjtnxyNPtPP6eDQ/download/technologies.csv 
+#### The attributes contained in the two CSV files have the following units: 
+ 
+|Attribute| Description| Unit| 
+|--------------|-----------|------------| 
+|carrier| technology| –| 
+|co2_emissions| specific carbon dioxide emissions |t/MWh (thermal)| 
+|color |HEX color code |–| 
+|efficiency |conversion efficieny| MWh (electric) / MWh (thermal)| 
+|marginal_cost |STMGC| €/MWh (electric)| 
+|p_max_pu |capacity factor in particular hour| p.u.| 
+|p_nom |rated/nominal capacity |MW| 
+ 
+Assume that all storage has sufficient energy filling levels to dispatch at full capacity. 
+ 
+#### [2 points] (a) Read the provided datasets into two separate pandas.DataFrame. 
+</span><span class="s0">#%% 
+</span><span class="s1">plants = pd.read_csv(</span><span class="s3">&quot;powerplants.csv&quot;</span><span class="s2">, </span><span class="s1">index_col = </span><span class="s3">&quot;Unnamed: 0&quot;</span><span class="s1">)</span>
+<span class="s1">techs = pd.read_csv(</span><span class="s3">&quot;technologies.csv&quot;</span><span class="s2">, </span><span class="s1">index_col = </span><span class="s3">&quot;Carrier&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">### [4 points] (b) Plot a pie chart with the distribution of capacities per technology. Color the chart segments according to the given colors, label the segments with the carrier and its capacity share in % rounded to one decimal point. 
+</span><span class="s0">#%% 
+#plants.plot(kind=&quot;pie&quot;, y=&quot;p_nom&quot;)</span>
+<span class="s1">carriers = plants.groupby(</span><span class="s3">'carrier'</span><span class="s1">).agg({</span><span class="s3">'p_nom'</span><span class="s1">: </span><span class="s3">'sum'</span><span class="s1">})</span>
+<span class="s1">carriers.loc[:</span><span class="s2">, </span><span class="s3">&quot;color&quot;</span><span class="s1">] = carriers.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x</span><span class="s2">,</span><span class="s3">&quot;color&quot;</span><span class="s1">])</span>
+<span class="s0">#carriers.loc[:, &quot;expl&quot;] = carriers.index.map(lambda x: 0.05)</span>
+
+<span class="s1">carriers.plot.pie(</span>
+    <span class="s1">y=</span><span class="s3">&quot;p_nom&quot;</span><span class="s2">, </span>
+    <span class="s1">autopct=</span><span class="s3">'%1.1f%%'</span><span class="s2">,</span><span class="s1">startangle=</span><span class="s4">90</span><span class="s2">, </span><span class="s1">figsize=(</span><span class="s4">30</span><span class="s2">,</span><span class="s4">20</span><span class="s1">)</span><span class="s2">,</span>
+    <span class="s1">colors = carriers.color</span><span class="s2">, </span>
+    <span class="s1">rot = </span><span class="s4">30</span><span class="s2">,</span>
+    <span class="s1">title = </span><span class="s3">&quot;Share of Capacity to total capacity&quot;</span><span class="s2">,</span>
+    <span class="s1">ylabel = </span><span class="s3">&quot;&quot;</span><span class="s2">,</span>
+    <span class="s0">#position = 1,</span>
+    <span class="s0">#explode=carriers.expl</span>
+<span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">### [8 points] (c) Write a function for plotting the merit order curve (supply side), by adapting the code from an online tutorial at https://tinyurl.com/plt-merit-order or https://archive.vn/Ljroc. 
+The following criteria should be satisfied: 
+• The function should take two arguments: a pandas.DataFrame for the power plant data, and another for the carrier-specific information. 
+  
+• The bars of the merit order curve should by coloured according to the given technology colors. 
+ 
+• The extent of the plot should start at the (0,0) origin and be limited to the highest marginal cost and total power plant capacity. 
+ 
+• Axes must be appropriately labelled with units. The preferred unit for the x-axis is GW. 
+</span><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">x_pos(df</span><span class="s2">, </span><span class="s1">x_pos_col):</span>
+    <span class="s1">df[</span><span class="s3">&quot;xpos&quot;</span><span class="s1">] = </span><span class="s3">&quot;&quot;</span>
+    <span class="s2">for </span><span class="s1">index </span><span class="s2">in </span><span class="s1">df.index:</span>
+        <span class="s0">#get index number based on index name</span>
+        <span class="s1">i = df.index.get_loc(index)</span>
+        <span class="s2">if </span><span class="s1">i == </span><span class="s4">0</span><span class="s1">:</span>
+            <span class="s0">#First index</span>
+            <span class="s1">df.loc[index</span><span class="s2">, </span><span class="s3">&quot;xpos&quot;</span><span class="s1">] = df.loc[index</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">]/</span><span class="s4">2</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s0">#Sum of cumulative capacity in the row above and the half of available capacity in</span>
+            <span class="s1">df.loc[index</span><span class="s2">, </span><span class="s3">&quot;xpos&quot;</span><span class="s1">] = df.loc[index</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">]/</span><span class="s4">2 </span><span class="s1">+ df.iloc[i-</span><span class="s4">1</span><span class="s1">][x_pos_col]</span>
+    <span class="s2">return </span><span class="s1">df</span>
+<span class="s0">#Function to determine the cut_off_power_plant that sets the market clearing price</span>
+<span class="s2">def </span><span class="s1">cut_off(demand</span><span class="s2">, </span><span class="s1">df):</span>
+    <span class="s0">#To get the cutoff power plant</span>
+    <span class="s2">for </span><span class="s1">index </span><span class="s2">in </span><span class="s1">df.index:</span>
+        <span class="s2">if </span><span class="s1">df.loc[index</span><span class="s2">, </span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">] &lt; demand:</span>
+            <span class="s2">pass</span>
+
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">cut_off_power_plant = index</span>
+            <span class="s0">#print (&quot;Power plant that sets the electricity price is: &quot;, df.loc[index, &quot;carrier&quot;])</span>
+            <span class="s2">return </span><span class="s1">cut_off_power_plant</span>
+            <span class="s2">break</span>
+
+    <span class="s2">return </span><span class="s1">print(</span><span class="s3">&quot;Error - please provide functional dataframe. Check Cut-off&quot;</span><span class="s1">)</span>
+<span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">copy</span>
+
+<span class="s2">def </span><span class="s1">merit_order(df</span><span class="s2">, </span><span class="s1">demand</span><span class="s2">, </span><span class="s1">power_plants</span><span class="s2">, </span><span class="s1">x_pos_col</span><span class="s2">, </span><span class="s1">cost_type):</span>
+
+    <span class="s1">df  = x_pos(df=df</span><span class="s2">, </span><span class="s1">x_pos_col=x_pos_col)</span>
+    <span class="s1">plt.figure(figsize = (</span><span class="s4">20</span><span class="s2">, </span><span class="s4">12</span><span class="s1">))</span>
+    <span class="s1">plt.rcParams[</span><span class="s3">&quot;font.size&quot;</span><span class="s1">] = </span><span class="s4">16</span>
+
+    <span class="s1">colors = df.color</span>
+    <span class="s1">xpos = df[</span><span class="s3">&quot;xpos&quot;</span><span class="s1">].values.tolist()</span>
+    <span class="s1">y = df[cost_type].values.tolist()</span>
+
+    <span class="s0">#width of each bar</span>
+    <span class="s1">w = df[</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">].values.tolist()</span>
+    <span class="s1">cut_off_power_plant = cut_off(demand=demand</span><span class="s2">, </span><span class="s1">df = df)</span>
+    <span class="s1">fig = plt.bar(xpos</span><span class="s2">,</span>
+            <span class="s1">height = y</span><span class="s2">,</span>
+            <span class="s1">width = w</span><span class="s2">,</span>
+            <span class="s1">fill = </span><span class="s2">True,</span>
+            <span class="s1">color = colors</span><span class="s2">,</span>
+            <span class="s1">)</span>
+
+    <span class="s1">plt.xlim(</span><span class="s4">0</span><span class="s2">, </span><span class="s1">df[</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">].sum())</span>
+    <span class="s1">plt.ylim(</span><span class="s4">0</span><span class="s2">, </span><span class="s1">df[cost_type].max() + </span><span class="s4">20</span><span class="s1">)</span>
+
+    <span class="s1">plt.hlines(y = df.loc[cut_off_power_plant</span><span class="s2">, </span><span class="s1">cost_type]</span><span class="s2">,</span>
+              <span class="s1">xmin = </span><span class="s4">0</span><span class="s2">,</span>
+              <span class="s1">xmax = demand</span><span class="s2">,</span>
+              <span class="s1">color = </span><span class="s3">&quot;red&quot;</span><span class="s2">,</span>
+               <span class="s1">linestyle = </span><span class="s3">&quot;dashed&quot;</span><span class="s1">)</span>
+
+    <span class="s1">plt.vlines(x = demand</span><span class="s2">,</span>
+               <span class="s1">ymin = </span><span class="s4">0</span><span class="s2">,</span>
+               <span class="s1">ymax = df.loc[cut_off_power_plant</span><span class="s2">, </span><span class="s1">cost_type]</span><span class="s2">,</span>
+               <span class="s1">color = </span><span class="s3">&quot;red&quot;</span><span class="s2">,</span>
+               <span class="s1">linestyle = </span><span class="s3">&quot;dashed&quot;</span><span class="s2">,</span>
+               <span class="s1">label = </span><span class="s3">&quot;Demand&quot;</span><span class="s1">)</span>
+
+    <span class="s1">handles = [plt.Rectangle((</span><span class="s4">0</span><span class="s2">,</span><span class="s4">0</span><span class="s1">)</span><span class="s2">,</span><span class="s4">1</span><span class="s2">,</span><span class="s4">1</span><span class="s2">, </span><span class="s1">color=carriers.loc[label</span><span class="s2">,</span><span class="s3">&quot;color&quot;</span><span class="s1">]) </span><span class="s2">for </span><span class="s1">label </span><span class="s2">in </span><span class="s1">power_plants]</span>
+    <span class="s1">plt.legend(handles</span><span class="s2">, </span><span class="s1">power_plants)</span>
+
+    <span class="s1">plt.text(x = demand - df.loc[cut_off_power_plant</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">]/</span><span class="s4">2</span><span class="s2">,</span>
+            <span class="s1">y = df.loc[cut_off_power_plant</span><span class="s2">, </span><span class="s1">cost_type] + </span><span class="s4">10</span><span class="s2">,</span>
+            <span class="s1">s = </span><span class="s3">f&quot;Electricity price: </span><span class="s2">\n    {</span><span class="s1">round(df.loc[cut_off_power_plant</span><span class="s2">, </span><span class="s1">cost_type]</span><span class="s2">,</span><span class="s4">3</span><span class="s1">)</span><span class="s2">} </span><span class="s3">€/MWh&quot;</span><span class="s1">)</span>
+
+    <span class="s1">plt.xlabel(</span><span class="s3">&quot;Power plant capacity (MW)&quot;</span><span class="s1">)</span>
+    <span class="s1">plt.ylabel(</span><span class="s3">&quot;Marginal Cost (€/MWh)&quot;</span><span class="s1">)</span>
+    <span class="s1">plt.show()</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### (d) Plot the merit order curve using the function you created for the following cases (i.e. do not duplicate the code for merit order plotting!): 
+[2 points] i. for the marginal_cost given in the dataset 
+ 
+[2 points] ii. with an added carbon price of 80 €/t𝐶𝑂2 (assume that previously no carbon pricing was included) 
+ 
+[2 points] iii. additionally to ii. with a gas price increased by 50 €/MWh𝑡ℎ 
+ 
+[2 points] iv. additionally to ii. and iii. without Germany’s nuclear power plant fleet 
+</span><span class="s0">#%% 
+# i: Merit order with maginal costs as in dataset (and a demand of 170000 MW)</span>
+<span class="s0"># Setting up data to fit tutorial functions</span>
+<span class="s1">df = copy.copy(plants) </span><span class="s0"># Copy helpls to protect original data from unwanted manipulation</span>
+<span class="s1">df.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">] = df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_max_pu&quot;</span><span class="s1">]*df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_nom&quot;</span><span class="s1">] </span><span class="s0"># Available capacity</span>
+<span class="s1">df_capa = df.groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s2">, </span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">}) </span><span class="s0"># Grouping by power plants with similar properties</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">]) </span><span class="s0"># Adding a collum containing co2 emissions based on tech table</span>
+<span class="s1">df_capa.sort_values(by = </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s2">, </span><span class="s1">ascending = </span><span class="s2">True, </span><span class="s1">inplace = </span><span class="s2">True</span><span class="s1">) </span><span class="s0"># Sorting is important here so that the Cummulative capacity can be calculated correctly</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">].cumsum()</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;color&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;color&quot;</span><span class="s1">]) </span><span class="s0">#Again adding color data from tech</span>
+<span class="s1">df_marg = df_capa.reset_index() </span><span class="s0"># resetting index since groupby.agg returns multiindex dataframe</span>
+<span class="s1">merit_order(df=df_marg</span><span class="s2">, </span><span class="s1">demand=</span><span class="s4">70000</span><span class="s2">, </span><span class="s1">power_plants=carriers.index</span><span class="s2">, </span><span class="s1">x_pos_col=</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s2">, </span><span class="s1">cost_type=</span><span class="s3">&quot;marginal_cost&quot;</span><span class="s1">)</span><span class="s0"># calling merit order functionality</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">[2 points] ii. with an added carbon price of 80 €/tCO2 (assume that previously no carbon pricing was included) 
+</span><span class="s0">#%% 
+# merit_order(df=df, demand=70000, power_plants=carriers.index, x_pos_col=&quot;Cumulative capacity (MW)&quot;, cost_type=&quot;marginal_co2_costs&quot;)</span>
+<span class="s0"># For comments please reffer to cell above. Code here is very repetitive (sorry)</span>
+<span class="s1">df = copy.copy(plants)</span>
+<span class="s1">df.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">] = df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_max_pu&quot;</span><span class="s1">]*df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_nom&quot;</span><span class="s1">]</span>
+<span class="s1">df_capa = df.groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s2">, </span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;color&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;color&quot;</span><span class="s1">])</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">])</span>
+<span class="s1">df_capa = df_capa.reset_index()</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s1">]+ df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">]*</span><span class="s4">80</span><span class="s1">/df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;efficiency&quot;</span><span class="s1">] </span><span class="s0"># Calculating &quot;new&quot; costs with co2</span>
+<span class="s1">df_capa.sort_values(by = </span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s2">, </span><span class="s1">ascending = </span><span class="s2">True, </span><span class="s1">inplace = </span><span class="s2">True</span><span class="s1">)</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">].cumsum()</span>
+<span class="s1">df_co2 = df_capa</span>
+<span class="s1">merit_order(df=df_co2</span><span class="s2">, </span><span class="s1">demand=</span><span class="s4">70000</span><span class="s2">, </span><span class="s1">power_plants=carriers.index</span><span class="s2">, </span><span class="s1">x_pos_col=</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s2">, </span><span class="s1">cost_type=</span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">[2 points] iii. additionally to ii. with a gas price increased by 50 €/MWh𝑡ℎ 
+</span><span class="s0">#%% 
+</span>
+<span class="s0">#%% 
+# For comments please reffer to cell above. Code here is very repetitive (sorry)</span>
+<span class="s1">df = copy.copy(plants)</span>
+<span class="s1">df.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">] = df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_max_pu&quot;</span><span class="s1">]*df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_nom&quot;</span><span class="s1">]</span>
+<span class="s1">df_capa = df.groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s2">, </span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;color&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;color&quot;</span><span class="s1">])</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">])</span>
+<span class="s1">df_capa = df_capa.reset_index()</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s1">]+ df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">]*</span><span class="s4">80</span><span class="s1">/df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;gas&quot;</span><span class="s1">] = df_capa.carrier.map(</span><span class="s2">lambda </span><span class="s1">x: </span><span class="s4">50 </span><span class="s2">if </span><span class="s1">x==</span><span class="s3">&quot;OCGT&quot; </span><span class="s2">or </span><span class="s1">x ==</span><span class="s3">&quot;CCGT&quot; </span><span class="s2">else </span><span class="s4">0</span><span class="s1">) </span><span class="s0"># Costs are only applied to gas power plants (CCGT and OCGT)</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s1">]+ df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;gas&quot;</span><span class="s1">]/df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]  </span><span class="s0"># New cost with CO2 and gas</span>
+<span class="s1">df_capa.sort_values(by = </span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s2">, </span><span class="s1">ascending = </span><span class="s2">True, </span><span class="s1">inplace = </span><span class="s2">True</span><span class="s1">)</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">].cumsum()</span>
+<span class="s1">df_co2_gas = df_capa</span>
+<span class="s1">merit_order(df=df_co2_gas</span><span class="s2">, </span><span class="s1">demand=</span><span class="s4">70000</span><span class="s2">, </span><span class="s1">power_plants=carriers.index</span><span class="s2">, </span><span class="s1">x_pos_col=</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s2">, </span><span class="s1">cost_type=</span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">[2 points] iv. additionally to ii. and iii. without Germany’s nuclear power plant fleet 
+</span><span class="s0">#%% 
+# For comments please reffer to cell above. Code here is very repetitive (sorry)</span>
+<span class="s1">df = copy.copy(plants)</span>
+<span class="s1">df.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">] = df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_max_pu&quot;</span><span class="s1">]*df.loc[:</span><span class="s2">, </span><span class="s3">&quot;p_nom&quot;</span><span class="s1">]</span>
+<span class="s1">df_capa = df.groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s2">, </span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;color&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;color&quot;</span><span class="s1">])</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">] = df_capa.index.map(</span><span class="s2">lambda </span><span class="s1">x: techs.loc[x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">])</span>
+<span class="s1">df_capa = df_capa.reset_index()</span>
+<span class="s1">index_names = df_capa[ df_capa[</span><span class="s3">'carrier'</span><span class="s1">] == </span><span class="s3">&quot;nuclear&quot; </span><span class="s1">].index </span><span class="s0">#Getting index names with nuclear plants</span>
+<span class="s1">df_capa.drop(index_names</span><span class="s2">, </span><span class="s1">inplace = </span><span class="s2">True</span><span class="s1">) </span><span class="s0">#removing nuclear power index names</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s1">]+ df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">]*</span><span class="s4">80</span><span class="s1">/df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;gas&quot;</span><span class="s1">] = df_capa.carrier.map(</span><span class="s2">lambda </span><span class="s1">x: </span><span class="s4">50 </span><span class="s2">if </span><span class="s1">x==</span><span class="s3">&quot;OCGT&quot; </span><span class="s2">or </span><span class="s1">x ==</span><span class="s3">&quot;CCGT&quot; </span><span class="s2">else </span><span class="s4">0</span><span class="s1">)</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s1">]+ df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;gas&quot;</span><span class="s1">]/df_capa.loc[:</span><span class="s2">,</span><span class="s3">&quot;efficiency&quot;</span><span class="s1">]</span>
+<span class="s1">df_capa.sort_values(by = </span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s2">, </span><span class="s1">ascending = </span><span class="s2">True, </span><span class="s1">inplace = </span><span class="s2">True</span><span class="s1">)</span>
+<span class="s1">df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">] = df_capa.loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">].cumsum()</span>
+<span class="s1">df_nuc = df_capa</span>
+<span class="s1">merit_order(df=df_nuc</span><span class="s2">, </span><span class="s1">demand=</span><span class="s4">70000</span><span class="s2">, </span><span class="s1">power_plants=carriers.index</span><span class="s2">, </span><span class="s1">x_pos_col=</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s2">, </span><span class="s1">cost_type=</span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### (e) For each of the cases, use code to determine for an electricity demand of 70 GW 
+[4 points] i. the market clearing price 
+ 
+[2 points] ii. the total power dispatched per technology 
+ 
+[2 points] iii. the resulting revenue per technology 
+ 
+[2 points] iv. the operational costs per technology 
+ 
+[2 points] v. the profits per technology 
+ 
+[4 points] vi. the carbon intensity of the system 
+</span><span class="s0">#%% 
+</span><span class="s1">demand = </span><span class="s4">70000</span>
+<span class="s2">def </span><span class="s1">rest_df(df</span><span class="s2">, </span><span class="s1">demand):</span>
+    <span class="s2">return </span><span class="s1">df.loc[:cut_off(demand=demand</span><span class="s2">, </span><span class="s1">df = df)</span><span class="s2">, </span><span class="s1">:]</span>
+
+<span class="s0">#Deleting the rest of the Dataframes with unused powerplants.</span>
+<span class="s1">df_rest = rest_df(df_marg</span><span class="s2">, </span><span class="s1">demand=demand) </span><span class="s0">#just the marginal cost</span>
+<span class="s1">df_co2_rest = rest_df(df_co2</span><span class="s2">, </span><span class="s1">demand=demand) </span><span class="s0">#with co2 price of 80€/t</span>
+<span class="s1">df_co2_gas_rest = rest_df(df_co2_gas</span><span class="s2">, </span><span class="s1">demand=demand) </span><span class="s0">#with co2 price and gas price increase</span>
+<span class="s1">df_nuc_rest = rest_df(df_nuc</span><span class="s2">, </span><span class="s1">demand=demand) </span><span class="s0">#with co2 price, gas price increase and without nuclear power</span>
+
+<span class="s1">rest_set = [[df_rest</span><span class="s2">, </span><span class="s3">&quot;marginal_cost&quot;</span><span class="s2">, </span><span class="s3">&quot;including only marginal costs&quot;</span><span class="s2">, </span><span class="s3">&quot;Marginal costs&quot;</span><span class="s1">]</span><span class="s2">,</span>
+            <span class="s1">[df_co2_rest</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs&quot;</span><span class="s2">, </span><span class="s3">&quot;including CO2 prices of 80€/t&quot;</span><span class="s2">, </span><span class="s3">&quot;Co2 Price&quot;</span><span class="s1">]</span><span class="s2">,</span>
+            <span class="s1">[df_co2_gas_rest</span><span class="s2">,</span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s2">, </span><span class="s3">&quot;including CO2 prices of 80€/t and increased Gas prices by 50€/MWHt&quot;</span><span class="s2">, </span><span class="s3">&quot;Gas price&quot;</span><span class="s1">]</span><span class="s2">,</span>
+            <span class="s1">[df_nuc_rest</span><span class="s2">, </span><span class="s3">&quot;marginal_co2_costs_with_gas_increase&quot;</span><span class="s2">, </span><span class="s3">&quot;including CO2 prices of 80€/t and increased Gas prices by 50€/MWHt and excluding nuclear power plants&quot;</span><span class="s2">, </span><span class="s3">&quot;Nuclear&quot;</span><span class="s1">]]</span>
+<span class="s0"># i. the market clearing price</span>
+<span class="s2">for </span><span class="s1">data </span><span class="s2">in </span><span class="s1">rest_set:</span>
+    <span class="s1">market_price = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][data[</span><span class="s4">1</span><span class="s1">]]</span>
+    <span class="s1">print(</span><span class="s3">f&quot;The market clearing price is </span><span class="s2">{</span><span class="s1">round(market_price</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">} </span><span class="s3">€/MWh for </span><span class="s2">{</span><span class="s1">data[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">}</span><span class="s3">&quot;</span><span class="s1">)</span>
+
+
+<span class="s0">#%% 
+# ii. the total power dispatched per technology</span>
+<span class="s2">for </span><span class="s1">data </span><span class="s2">in </span><span class="s1">rest_set:</span>
+    <span class="s1">plot_data = pd.DataFrame(columns = [</span><span class="s3">&quot;Total dispatched Energy [MWh]&quot;</span><span class="s1">])</span>
+    <span class="s1">energy = data[</span><span class="s4">0</span><span class="s1">].groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+    <span class="s1">last_carrier = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]</span>
+    <span class="s1">last_energy = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">]-demand</span>
+    <span class="s1">energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:] = energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:]-last_energy</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">energy.index:</span>
+        <span class="s1">plot_data.loc[i</span><span class="s2">, </span><span class="s3">&quot;Total dispatched Energy [MWh]&quot;</span><span class="s1">] = energy.loc[i</span><span class="s2">,</span><span class="s1">:].values[</span><span class="s4">0</span><span class="s1">]</span>
+        <span class="s0"># please uncomment line below if additional scalar values are wanted!</span>
+        <span class="s0">#print(f&quot;When {data[2]}, the total dispatched energy for technology {i} is {round(energy.loc[i,:].values[0],3)} MWh&quot;)</span>
+    <span class="s1">plot_data.plot.bar(title = data[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">, </span><span class="s1">xlabel = </span><span class="s3">&quot;Carrier&quot;</span><span class="s2">, </span><span class="s1">ylabel = </span><span class="s3">&quot;Total dispatched Energy [MWh]&quot;</span><span class="s2">, </span><span class="s1">legend=</span><span class="s2">False</span><span class="s1">)</span>
+
+<span class="s0">#%% 
+# iii. the resulting revenue per technology</span>
+<span class="s0"># Revenue is: market clearing price * dispatched energy (per tech)</span>
+<span class="s2">for </span><span class="s1">data </span><span class="s2">in </span><span class="s1">rest_set:</span>
+    <span class="s1">plot_data = pd.DataFrame(columns = [</span><span class="s3">&quot;Revenue&quot;</span><span class="s1">])</span>
+    <span class="s1">market_price = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][data[</span><span class="s4">1</span><span class="s1">]]</span>
+    <span class="s1">energy = data[</span><span class="s4">0</span><span class="s1">].groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+    <span class="s1">last_carrier = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]</span>
+    <span class="s1">last_energy = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">]-demand</span>
+    <span class="s1">energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:] = energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:]-last_energy</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">energy.index:</span>
+        <span class="s1">plot_data.loc[i</span><span class="s2">, </span><span class="s3">&quot;Revenue&quot;</span><span class="s1">] = energy.loc[i</span><span class="s2">,</span><span class="s1">:].values[</span><span class="s4">0</span><span class="s1">]*market_price</span>
+        <span class="s0"># please uncomment line below if additional scalar values are wanted!</span>
+        <span class="s0">#print(f&quot;When {data[2]}, the revenue for technology {i} is {round(energy.loc[i,:].values[0]*market_price,3)}€&quot;)</span>
+    <span class="s1">plot_data.plot.bar(title = data[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">, </span><span class="s1">xlabel = </span><span class="s3">&quot;Carrier&quot;</span><span class="s2">, </span><span class="s1">ylabel = </span><span class="s3">&quot;Revenue [€]&quot;</span><span class="s2">, </span><span class="s1">legend=</span><span class="s2">False</span><span class="s1">)</span>
+<span class="s0">#%% 
+#iv. the operational costs per technology</span>
+<span class="s0"># operational cost is: marginal cost (per tech) * dispatched energy (per tech)</span>
+<span class="s2">for </span><span class="s1">data </span><span class="s2">in </span><span class="s1">rest_set:</span>
+    <span class="s1">plot_data = pd.DataFrame(columns=[</span><span class="s3">&quot;costs&quot;</span><span class="s1">])</span>
+    <span class="s1">market_price = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][data[</span><span class="s4">1</span><span class="s1">]]</span>
+    <span class="s1">energy = data[</span><span class="s4">0</span><span class="s1">].groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+    <span class="s1">costs = data[</span><span class="s4">0</span><span class="s1">].groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]).agg({data[</span><span class="s4">1</span><span class="s1">]:</span><span class="s3">&quot;mean&quot;</span><span class="s1">})</span>
+    <span class="s1">last_carrier = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]</span>
+    <span class="s1">last_energy = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">]-demand</span>
+    <span class="s1">energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:] = energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:]-last_energy</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">energy.index:</span>
+        <span class="s1">plot_data.loc[i</span><span class="s2">, </span><span class="s3">&quot;costs&quot;</span><span class="s1">] = energy.loc[i</span><span class="s2">,</span><span class="s1">:].values[</span><span class="s4">0</span><span class="s1">]*costs.loc[i</span><span class="s2">, </span><span class="s1">:].values[</span><span class="s4">0</span><span class="s1">]</span>
+        <span class="s0"># please uncomment line below if additional scalar values are wanted!</span>
+        <span class="s0">#print(f&quot;When {data[2]}, the operational cost for technology {i} is {round(energy.loc[i,:].values[0]*costs.loc[i, :].values[0],3)}€&quot;)</span>
+    <span class="s1">plot_data.plot.bar(title = data[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">, </span><span class="s1">xlabel = </span><span class="s3">&quot;Carrier&quot;</span><span class="s2">, </span><span class="s1">ylabel = </span><span class="s3">&quot;Operational costs [€]&quot;</span><span class="s2">, </span><span class="s1">legend=</span><span class="s2">False</span><span class="s1">)</span>
+
+<span class="s0">#%% 
+#v. the profits per technology</span>
+<span class="s0"># Profit is: revenue(per tech)-cost(per tech)</span>
+<span class="s2">for </span><span class="s1">data </span><span class="s2">in </span><span class="s1">rest_set:</span>
+    <span class="s1">plot_data = pd.DataFrame(columns= [</span><span class="s3">&quot;profits&quot;</span><span class="s1">])</span>
+    <span class="s1">market_price = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][data[</span><span class="s4">1</span><span class="s1">]]</span>
+    <span class="s1">energy = data[</span><span class="s4">0</span><span class="s1">].groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+    <span class="s1">costs = data[</span><span class="s4">0</span><span class="s1">].groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]).agg({data[</span><span class="s4">1</span><span class="s1">]:</span><span class="s3">&quot;mean&quot;</span><span class="s1">})</span>
+    <span class="s1">last_carrier = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]</span>
+    <span class="s1">last_energy = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">]-demand</span>
+    <span class="s1">energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:] = energy.loc[last_carrier</span><span class="s2">,</span><span class="s1">:]-last_energy</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">energy.index:</span>
+        <span class="s1">plot_data.loc[i</span><span class="s2">, </span><span class="s3">&quot;profits&quot;</span><span class="s1">] = energy.loc[i</span><span class="s2">,</span><span class="s1">:].values[</span><span class="s4">0</span><span class="s1">]*market_price-energy.loc[i</span><span class="s2">,</span><span class="s1">:].values[</span><span class="s4">0</span><span class="s1">]*costs.loc[i</span><span class="s2">, </span><span class="s1">:].values[</span><span class="s4">0</span><span class="s1">]</span>
+        <span class="s0"># please uncomment line below if additional scalar values are wanted!</span>
+        <span class="s0">#print(f&quot;When {data[2]}, the profit for technology {i} is {round(energy.loc[i,:].values[0]*market_price-energy.loc[i,:].values[0]*costs.loc[i, :].values[0],3)}€&quot;)</span>
+    <span class="s1">plot_data.plot.bar(title = data[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">, </span><span class="s1">xlabel = </span><span class="s3">&quot;Carrier&quot;</span><span class="s2">, </span><span class="s1">ylabel = </span><span class="s3">&quot;Profit [€]&quot;</span><span class="s2">, </span><span class="s1">legend=</span><span class="s2">False</span><span class="s1">)</span>
+
+
+
+<span class="s0">#%% 
+#vi. the carbon intensity of the system</span>
+<span class="s1">plot_data = pd.DataFrame(columns = [</span><span class="s3">&quot;co2&quot;</span><span class="s1">])</span>
+<span class="s2">for </span><span class="s1">data </span><span class="s2">in </span><span class="s1">rest_set:</span>
+    <span class="s1">market_price = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][data[</span><span class="s4">1</span><span class="s1">]]</span>
+    <span class="s1">data[</span><span class="s4">0</span><span class="s1">].loc[:</span><span class="s2">, </span><span class="s3">&quot;co2_abs&quot;</span><span class="s1">] = data[</span><span class="s4">0</span><span class="s1">].loc[:</span><span class="s2">, </span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">] * data[</span><span class="s4">0</span><span class="s1">].loc[:</span><span class="s2">, </span><span class="s3">&quot;Available capacity (MW)&quot;</span><span class="s1">] </span><span class="s0">#(tco2/MWh)*MWh&lt;-&gt;tco2</span>
+    <span class="s1">carbon = data[</span><span class="s4">0</span><span class="s1">].groupby([</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]).agg({</span><span class="s3">&quot;co2_abs&quot;</span><span class="s1">:</span><span class="s3">&quot;sum&quot;</span><span class="s1">})</span>
+    <span class="s1">last_carrier = data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;carrier&quot;</span><span class="s1">]</span>
+    <span class="s1">rest_co2 = (data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;Cumulative capacity (MW)&quot;</span><span class="s1">]-demand)*data[</span><span class="s4">0</span><span class="s1">].iloc[-</span><span class="s4">1</span><span class="s1">][</span><span class="s3">&quot;co2_emissions&quot;</span><span class="s1">]</span>
+    <span class="s1">carbon.loc[last_carrier</span><span class="s2">,</span><span class="s1">:] = carbon.loc[last_carrier</span><span class="s2">,</span><span class="s1">:]-rest_co2</span>
+    <span class="s1">print(</span><span class="s3">f&quot;When </span><span class="s2">{</span><span class="s1">data[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">} </span><span class="s3">the carbon emission for the system is </span><span class="s2">{</span><span class="s1">round(carbon.sum().values[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span><span class="s4">3</span><span class="s1">)</span><span class="s2">}</span><span class="s3">t with </span><span class="s2">{</span><span class="s1">round(carbon.sum().values[</span><span class="s4">0</span><span class="s1">]/demand</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">} </span><span class="s3">t/MWh&quot;</span><span class="s1">)</span>
+    <span class="s1">plot_data.loc[data[</span><span class="s4">3</span><span class="s1">]</span><span class="s2">, </span><span class="s3">&quot;co2&quot;</span><span class="s1">] = carbon.sum().values[</span><span class="s4">0</span><span class="s1">]</span>
+<span class="s1">plot_data.plot.bar(title = </span><span class="s3">&quot;Carbon intensity of the System&quot;</span><span class="s2">, </span><span class="s1">xlabel = </span><span class="s3">&quot;Carrier&quot;</span><span class="s2">, </span><span class="s1">ylabel = </span><span class="s3">&quot;System Co2 Emissions [t]&quot;</span><span class="s2">, </span><span class="s1">legend=</span><span class="s2">False</span><span class="s1">)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### [4 points] (f) Describe the major differences you observe between the four cases. 
+</span><span class="s0">#%% 
+# The most significant Points regarding the differences are the prices for running the energy system mas well as the carbon emissions.</span>
+
+<span class="s0"># The only Carbondioxide emission reducing measure is to set a carbon price/tax. Increasing the Gas price and removing Nuclearpower plants leads to more co2 emissions.</span>
+
+<span class="s0"># Introducing the additionaly prices like Gas and CO2 emission prices is increasing the electricity cost as well and therefore increases the profits for power plants that are not affected by these measures (like Solar, Wind, Biomass...)</span>
+
+<span class="s0">#</span>
+<span class="s0">#%% md 
+</span><span class="s1">## Task 3: Tools for Electricity Market Modelling [28 points] 
+##### Build a simple electricity market model for minimising operational costs within technical constraints for South Africa, Mozambique and Eswatini considering the following information: 
+The operational fleet of power plants in the three countries is specified as follows: 
+ 
+|Technology| Country      |Marginal Cost [€/MWh] |Capacity [MW]| 
+|----------|--------------|----------------------|-------------| 
+|Coal | South Africa |30 |35000| 
+|Wind | South Africa |0 |3000| 
+|Gas | South Africa |60 |8000| 
+|Oil | South Africa |80 |2000| 
+|Hydro | Mozambique   |3 |1200| 
+|Gas | Mozambique   |55 |500| 
+|Hydro | Eswatini     |5 |600| 
+ 
+The electricity demand in the countries reads as follows: 
+ 
+|Country |Demand [MW]| 
+|----------|---------| 
+|South Africa |42000| 
+|Mozambique |650| 
+|Eswatini |250| 
+ 
+The transmission capacities read as follows: 
+ 
+|Start| End| Capacity [MW]| 
+|----------|---------|---------| 
+|South Africa| Mozambique |500| 
+|Mozambique |Eswatini |100| 
+|South Africa| Eswatini |250| 
+ 
+Assume equal reactances for the transmission lines. 
+ 
+(a) Build and solve the problem using pyomo. You’ll need to: 
+ 
+[3 points] i. create all variables for generation and transmission, 
+ 
+[2 points] ii. formulate the objective function for minimising the operaitonal costs, 
+ 
+[5 points] iii. build the necessary constraints, including the technical limits of generation and transmission 
+and the Kirchhoff Laws, 
+ 
+[2 points] iv. solve the optimisation model with a solver of your choice, 
+ 
+[3 points] v. retrieve the generator dispatch, power flows, objective function and market prices. Label 
+units! 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">pyomo.environ </span><span class="s2">as </span><span class="s1">pe</span>
+<span class="s0"># model = pe.ConcreteModel()</span>
+<span class="s0">#</span>
+<span class="s0"># Transmission capacity (interpreting as bidirectional)</span>
+<span class="s1">ZA_MZ = </span><span class="s4">500</span>
+<span class="s1">MZ_SZ = </span><span class="s4">100</span>
+<span class="s1">ZA_SZ = </span><span class="s4">250</span>
+<span class="s0">#</span>
+<span class="s0"># # Country specific</span>
+<span class="s0"># params = {&quot;ZA&quot;: {&quot;capacity&quot;: {&quot;Coal&quot;:35000, &quot;Wind&quot;:3000, &quot;Gas&quot;: 8000, &quot;Oil&quot;: 2000},&quot;cost&quot; :{&quot;Coal&quot;:30, &quot;Wind&quot;:0, &quot;Gas&quot;: 60, &quot;Oil&quot;: 80}, &quot;demand&quot;: {&quot;demand&quot;: 42000}}, &quot;MZ&quot;: {&quot;capacity&quot;:{&quot;Hydro&quot;:1200 , &quot;Gas&quot;:500 }, &quot;cost&quot;:{&quot;Hydro&quot;:3 , &quot;Gas&quot;:55}, &quot;demand&quot;: {&quot;demand&quot;:650}}, &quot;SZ&quot;: {&quot;capacity&quot;:{&quot;Hydro&quot;: 600}, &quot;cost&quot;:{&quot;Hydro&quot;:5}, &quot;demand&quot;: {&quot;demand&quot;:250}}}</span>
+<span class="s0">#</span>
+<span class="s0">#</span>
+<span class="s0"># # Capacity bounds:</span>
+<span class="s0"># model.ZAcapacityCoal = pe.Var(bounds = (0, params[&quot;ZA&quot;][&quot;capacity&quot;][&quot;Coal&quot;]))</span>
+<span class="s0"># model.ZAcapacityWind = pe.Var(bounds = (0, params[&quot;ZA&quot;][&quot;capacity&quot;][&quot;Wind&quot;]))</span>
+<span class="s0"># model.ZAcapacityGas = pe.Var(bounds = (0, params[&quot;ZA&quot;][&quot;capacity&quot;][&quot;Gas&quot;]))</span>
+<span class="s0"># model.ZAcapacityOil = pe.Var(bounds = (0, params[&quot;ZA&quot;][&quot;capacity&quot;][&quot;Oil&quot;]))</span>
+<span class="s0"># model.MZcapacityHydro = pe.Var(bounds = (0, params[&quot;MZ&quot;][&quot;capacity&quot;][&quot;Hydro&quot;]))</span>
+<span class="s0"># model.MZcapacityGas = pe.Var(bounds = (0, params[&quot;MZ&quot;][&quot;capacity&quot;][&quot;Gas&quot;]))</span>
+<span class="s0"># model.SZcapacityHydro = pe.Var(bounds = (0, params[&quot;SZ&quot;][&quot;capacity&quot;][&quot;Hydro&quot;]))</span>
+<span class="s0">#</span>
+<span class="s0"># # Transmission bounds:</span>
+<span class="s0"># # Prefix definition: Power flowing from start to End will be negative (therefore will be substracted at start and added at end point)</span>
+<span class="s0"># model.ZA_MZ = pe.Var(bounds = (-ZA_MZ, ZA_MZ))</span>
+<span class="s0"># model.MZ_SZ = pe.Var(bounds = (-MZ_SZ, MZ_SZ))</span>
+<span class="s0"># model.ZA_SZ = pe.Var(bounds = (-ZA_SZ, ZA_SZ))</span>
+<span class="s0">#</span>
+<span class="s0"># # Demand constraints:</span>
+<span class="s0"># model.c_ZA = pe.Constraint(expr = model.ZAcapacityCoal +model.ZAcapacityWind +model.ZAcapacityOil +model.ZAcapacityGas # Generators</span>
+<span class="s0">#                                   -model.ZA_MZ-model.ZA_SZ # Transmission</span>
+<span class="s0">#                                   -params[&quot;ZA&quot;][&quot;demand&quot;][&quot;demand&quot;] == 0 # Demand</span>
+<span class="s0">#                            )</span>
+<span class="s0"># model.c_MZ = pe.Constraint(expr = model.MZcapacityHydro +model.MZcapacityGas # Generators</span>
+<span class="s0">#                                   -model.MZ_SZ+model.ZA_MZ # Transmission</span>
+<span class="s0">#                                   -params[&quot;MZ&quot;][&quot;demand&quot;][&quot;demand&quot;] == 0 # Demand</span>
+<span class="s0">#                            )</span>
+<span class="s0"># model.c_SZ = pe.Constraint(expr = model.SZcapacityHydro # Generators</span>
+<span class="s0">#                                   +model.MZ_SZ+model.ZA_SZ # Transmission</span>
+<span class="s0">#                                   -params[&quot;SZ&quot;][&quot;demand&quot;][&quot;demand&quot;] == 0 # Demand</span>
+<span class="s0">#                            )</span>
+<span class="s0">#</span>
+<span class="s0"># # Objective</span>
+<span class="s0"># # find minimum of sum(cost*capacity)</span>
+<span class="s0"># model.obj = pe.Objective(expr = model.ZAcapacityCoal*params[&quot;ZA&quot;][&quot;cost&quot;][&quot;Coal&quot;] +model.ZAcapacityWind*params[&quot;ZA&quot;][&quot;cost&quot;][&quot;Wind&quot;] +model.ZAcapacityOil*params[&quot;ZA&quot;][&quot;cost&quot;][&quot;Oil&quot;] +model.ZAcapacityGas*params[&quot;ZA&quot;][&quot;cost&quot;][&quot;Gas&quot;] # ZA</span>
+<span class="s0">#                                 +model.MZcapacityHydro*params[&quot;MZ&quot;][&quot;cost&quot;][&quot;Hydro&quot;] +model.MZcapacityGas*params[&quot;MZ&quot;][&quot;cost&quot;][&quot;Gas&quot;] # MZ</span>
+<span class="s0">#                                 +model.SZcapacityHydro*params[&quot;SZ&quot;][&quot;cost&quot;][&quot;Hydro&quot;] #SZ</span>
+<span class="s0">#                         ,</span>
+<span class="s0">#                          sense = pe.minimize</span>
+<span class="s0">#                          )</span>
+
+<span class="s0"># Data and Parameter Dictionary to build Model</span>
+<span class="s1">params = {</span><span class="s3">&quot;ZA&quot;</span><span class="s1">: {</span><span class="s3">&quot;capacity&quot;</span><span class="s1">: {</span><span class="s3">&quot;Coal&quot;</span><span class="s1">:</span><span class="s4">35000</span><span class="s2">, </span><span class="s3">&quot;Wind&quot;</span><span class="s1">:</span><span class="s4">3000</span><span class="s2">, </span><span class="s3">&quot;Gas&quot;</span><span class="s1">: </span><span class="s4">8000</span><span class="s2">, </span><span class="s3">&quot;Oil&quot;</span><span class="s1">: </span><span class="s4">2000</span><span class="s1">}</span><span class="s2">,</span><span class="s3">&quot;cost&quot; </span><span class="s1">:{</span><span class="s3">&quot;Coal&quot;</span><span class="s1">:</span><span class="s4">30</span><span class="s2">, </span><span class="s3">&quot;Wind&quot;</span><span class="s1">:</span><span class="s4">0</span><span class="s2">, </span><span class="s3">&quot;Gas&quot;</span><span class="s1">: </span><span class="s4">60</span><span class="s2">, </span><span class="s3">&quot;Oil&quot;</span><span class="s1">: </span><span class="s4">80</span><span class="s1">}</span><span class="s2">, </span><span class="s3">&quot;demand&quot;</span><span class="s1">: {</span><span class="s3">&quot;demand&quot;</span><span class="s1">: </span><span class="s4">42000</span><span class="s1">}}</span><span class="s2">, </span><span class="s3">&quot;MZ&quot;</span><span class="s1">: {</span><span class="s3">&quot;capacity&quot;</span><span class="s1">:{</span><span class="s3">&quot;Hydro&quot;</span><span class="s1">:</span><span class="s4">1200 </span><span class="s2">, </span><span class="s3">&quot;Gas&quot;</span><span class="s1">:</span><span class="s4">500 </span><span class="s1">}</span><span class="s2">, </span><span class="s3">&quot;cost&quot;</span><span class="s1">:{</span><span class="s3">&quot;Hydro&quot;</span><span class="s1">:</span><span class="s4">3 </span><span class="s2">, </span><span class="s3">&quot;Gas&quot;</span><span class="s1">:</span><span class="s4">55</span><span class="s1">}</span><span class="s2">, </span><span class="s3">&quot;demand&quot;</span><span class="s1">: {</span><span class="s3">&quot;demand&quot;</span><span class="s1">:</span><span class="s4">650</span><span class="s1">}}</span><span class="s2">, </span><span class="s3">&quot;SZ&quot;</span><span class="s1">: {</span><span class="s3">&quot;capacity&quot;</span><span class="s1">:{</span><span class="s3">&quot;Hydro&quot;</span><span class="s1">: </span><span class="s4">600</span><span class="s1">}</span><span class="s2">, </span><span class="s3">&quot;cost&quot;</span><span class="s1">:{</span><span class="s3">&quot;Hydro&quot;</span><span class="s1">:</span><span class="s4">5</span><span class="s1">}</span><span class="s2">, </span><span class="s3">&quot;demand&quot;</span><span class="s1">: {</span><span class="s3">&quot;demand&quot;</span><span class="s1">:</span><span class="s4">250</span><span class="s1">}}}</span>
+
+<span class="s1">m = pe.ConcreteModel()</span>
+<span class="s1">m.dual = pe.Suffix(direction=pe.Suffix.IMPORT)</span>
+
+<span class="s1">m.countries = pe.Set(initialize=params.keys())</span>
+
+<span class="s1">technologies = list(params[</span><span class="s3">&quot;ZA&quot;</span><span class="s1">][</span><span class="s3">&quot;capacity&quot;</span><span class="s1">].keys() | params[</span><span class="s3">&quot;MZ&quot;</span><span class="s1">][</span><span class="s3">&quot;capacity&quot;</span><span class="s1">].keys() | params[</span><span class="s3">&quot;SZ&quot;</span><span class="s1">][</span><span class="s3">&quot;capacity&quot;</span><span class="s1">].keys())</span>
+<span class="s1">m.technologies = pe.Set(initialize=technologies)</span>
+<span class="s1">m.g = pe.Var(m.countries</span><span class="s2">, </span><span class="s1">m.technologies</span><span class="s2">, </span><span class="s1">within=pe.NonNegativeReals)</span>
+
+
+
+<span class="s1">@m.Constraint(m.countries</span><span class="s2">, </span><span class="s1">m.technologies)</span>
+<span class="s2">def </span><span class="s1">generator_limit(m</span><span class="s2">, </span><span class="s1">c</span><span class="s2">, </span><span class="s1">s):</span>
+    <span class="s2">return </span><span class="s1">m.g[c</span><span class="s2">,</span><span class="s1">s] &lt;= params[c][</span><span class="s3">&quot;capacity&quot;</span><span class="s1">].get(s</span><span class="s2">, </span><span class="s4">0</span><span class="s1">)</span>
+
+<span class="s0"># Transmission bounds:</span>
+<span class="s0"># Prefix definition: Power flowing from start to End will be negative (therefore will be substracted at start and added at end point)</span>
+<span class="s1">m.ZA_MZ = pe.Var(bounds = (-ZA_MZ</span><span class="s2">, </span><span class="s1">ZA_MZ))</span>
+<span class="s1">m.MZ_SZ = pe.Var(bounds = (-MZ_SZ</span><span class="s2">, </span><span class="s1">MZ_SZ))</span>
+<span class="s1">m.ZA_SZ = pe.Var(bounds = (-ZA_SZ</span><span class="s2">, </span><span class="s1">ZA_SZ))</span>
+
+<span class="s0"># Objective function:</span>
+<span class="s1">m.cost = pe.Objective(expr=sum(params[c][</span><span class="s3">&quot;cost&quot;</span><span class="s1">].get(s</span><span class="s2">, </span><span class="s4">0</span><span class="s1">) * m.g[c</span><span class="s2">,</span><span class="s1">s] </span><span class="s2">for </span><span class="s1">s </span><span class="s2">in </span><span class="s1">m.technologies </span><span class="s2">for </span><span class="s1">c </span><span class="s2">in </span><span class="s1">m.countries))</span>
+
+<span class="s1">@m.Constraint(m.countries)</span>
+<span class="s2">def </span><span class="s1">kcl(m</span><span class="s2">, </span><span class="s1">c):</span>
+    <span class="s2">if </span><span class="s1">c == </span><span class="s3">&quot;SZ&quot;</span><span class="s1">:</span>
+        <span class="s2">return </span><span class="s1">sum(m.g[c</span><span class="s2">,</span><span class="s1">s] </span><span class="s2">for </span><span class="s1">s </span><span class="s2">in </span><span class="s1">m.technologies)   +m.MZ_SZ+m.ZA_SZ == params[c][</span><span class="s3">&quot;demand&quot;</span><span class="s1">][</span><span class="s3">&quot;demand&quot;</span><span class="s1">]</span>
+    <span class="s2">elif </span><span class="s1">c == </span><span class="s3">&quot;MZ&quot;</span><span class="s1">:</span>
+        <span class="s2">return </span><span class="s1">sum(m.g[c</span><span class="s2">,</span><span class="s1">s] </span><span class="s2">for </span><span class="s1">s </span><span class="s2">in </span><span class="s1">m.technologies) -m.MZ_SZ +m.ZA_MZ == params[c][</span><span class="s3">&quot;demand&quot;</span><span class="s1">][</span><span class="s3">&quot;demand&quot;</span><span class="s1">]</span>
+    <span class="s2">elif </span><span class="s1">c == </span><span class="s3">&quot;ZA&quot;</span><span class="s1">:</span>
+        <span class="s2">return </span><span class="s1">sum(m.g[c</span><span class="s2">,</span><span class="s1">s] </span><span class="s2">for </span><span class="s1">s </span><span class="s2">in </span><span class="s1">m.technologies) -m.ZA_MZ -m.ZA_SZ == params[c][</span><span class="s3">&quot;demand&quot;</span><span class="s1">][</span><span class="s3">&quot;demand&quot;</span><span class="s1">]</span>
+<span class="s1">m.generator_limit</span>
+<span class="s1">print(</span><span class="s3">&quot;Starting optimization...&quot;</span><span class="s1">)</span>
+<span class="s1">pe.SolverFactory(</span><span class="s3">'cbc'</span><span class="s1">).solve(m)</span>
+<span class="s1">print(</span><span class="s3">&quot;Optimization finished!&quot;</span><span class="s1">)</span>
+<span class="s0">#%% 
+# Generator dispatch:</span>
+<span class="s1">se = pd.Series(m.g.get_values()).unstack()</span>
+<span class="s1">df_MW = pd.DataFrame(se).rename(columns={</span><span class="s3">&quot;Coal&quot;</span><span class="s1">: </span><span class="s3">&quot;Coal [MW]&quot;</span><span class="s2">, </span><span class="s3">&quot;Gas&quot;</span><span class="s1">: </span><span class="s3">&quot;Gas [MW]&quot;</span><span class="s2">, </span><span class="s3">&quot;Hydro&quot;</span><span class="s1">: </span><span class="s3">&quot;Hydro [MW]&quot;</span><span class="s2">, </span><span class="s3">&quot;Oil&quot;</span><span class="s1">: </span><span class="s3">&quot;Oil [MW]&quot;</span><span class="s2">, </span><span class="s3">&quot;Wind&quot;</span><span class="s1">: </span><span class="s3">&quot;Wind [MW]&quot;</span><span class="s1">})</span>
+<span class="s1">df_MW</span>
+<span class="s0">#%% 
+# power flows are (please note prefix definition from Zell 36)</span>
+<span class="s1">print(</span><span class="s3">f&quot;From South Africa to Mozambique: </span><span class="s2">{</span><span class="s1">m.ZA_MZ()</span><span class="s2">} </span><span class="s3">MW&quot;</span><span class="s1">)</span>
+<span class="s1">print((</span><span class="s3">f&quot;From South Africa to Eswatini: </span><span class="s2">{</span><span class="s1">m.ZA_SZ()</span><span class="s2">} </span><span class="s3">MW&quot;</span><span class="s1">))</span>
+<span class="s1">print((</span><span class="s3">f&quot;From Mosambique to Eswatini: </span><span class="s2">{</span><span class="s1">m.MZ_SZ()</span><span class="s2">} </span><span class="s3">MW&quot;</span><span class="s1">))</span>
+<span class="s0">#%% 
+</span><span class="s1">costs = {</span><span class="s3">&quot;ZA&quot;</span><span class="s1">:{</span><span class="s3">'Coal'</span><span class="s1">: </span><span class="s4">30</span><span class="s2">, </span><span class="s3">'Wind'</span><span class="s1">: </span><span class="s4">0</span><span class="s2">, </span><span class="s3">'Gas'</span><span class="s1">: </span><span class="s4">60</span><span class="s2">, </span><span class="s3">'Oil'</span><span class="s1">: </span><span class="s4">80</span><span class="s1">}</span><span class="s2">,</span>
+<span class="s3">&quot;MZ&quot;</span><span class="s1">:{</span><span class="s3">'Hydro'</span><span class="s1">: </span><span class="s4">3</span><span class="s2">, </span><span class="s3">'Gas'</span><span class="s1">: </span><span class="s4">55</span><span class="s1">}</span><span class="s2">,</span>
+<span class="s3">&quot;SZ&quot;</span><span class="s1">:{</span><span class="s3">'Hydro'</span><span class="s1">: </span><span class="s4">5</span><span class="s1">}}</span>
+<span class="s1">costs = pd.DataFrame(costs).T</span>
+<span class="s0">#</span>
+<span class="s1">df = pd.DataFrame(se)</span>
+<span class="s1">costs_by_tech = df * costs</span>
+<span class="s1">print(</span><span class="s3">f&quot;The costs by tech are [€]:&quot;</span><span class="s1">)</span>
+<span class="s1">print(costs_by_tech)</span>
+<span class="s1">print(</span><span class="s3">f&quot;While the electricity price within this bidding zone (with merit-order principle) would be </span><span class="s2">{</span><span class="s1">(costs_by_tech/df).max().max()</span><span class="s2">} </span><span class="s3">€/MWh&quot;</span><span class="s1">)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### (b) Build and solve the same problem in PyPSA. You’ll need to: 
+ 
+[1 point] i. create a new network, 
+ 
+[5 points] ii. add the generators, lines, and loads to the network, 
+ 
+[2 points] iii. solve the built network with a solver of your choice, 
+ 
+[3 points] iv. retrieve the generator dispatch, power flows, objective function and market prices. Label 
+units! 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">pypsa</span>
+
+<span class="s1">n = pypsa.Network()</span>
+
+
+<span class="s1">x = </span><span class="s4">0</span>
+<span class="s1">y = </span><span class="s4">0</span>
+<span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">params.keys():</span>
+    <span class="s1">n.add(</span><span class="s3">&quot;Bus&quot;</span><span class="s2">, </span><span class="s1">i</span><span class="s2">, </span><span class="s1">x = x</span><span class="s2">, </span><span class="s1">y = y)</span>
+    <span class="s1">x = x+</span><span class="s4">5</span>
+    <span class="s1">y = y+</span><span class="s4">1</span>
+    <span class="s1">n.add(</span><span class="s3">&quot;Load&quot;</span><span class="s2">, </span><span class="s1">name = str(</span><span class="s3">&quot;Load&quot;</span><span class="s1">+i)</span><span class="s2">, </span><span class="s1">bus = i</span><span class="s2">, </span><span class="s1">p_set=params[i][</span><span class="s3">&quot;demand&quot;</span><span class="s1">][</span><span class="s3">&quot;demand&quot;</span><span class="s1">])</span>
+    <span class="s2">for </span><span class="s1">carrier </span><span class="s2">in </span><span class="s1">params[i][</span><span class="s3">&quot;capacity&quot;</span><span class="s1">].keys():</span>
+        <span class="s0"># Luckily since we only take look at one timestep we don't have to differentiate between volatile generation and &quot;capacity&quot; regualted Generators</span>
+        <span class="s1">n.add(</span><span class="s3">&quot;Generator&quot;</span><span class="s2">,</span>
+                <span class="s1">name = str(carrier)+</span><span class="s3">&quot;_&quot;</span><span class="s1">+str(i)</span><span class="s2">,</span>
+                <span class="s1">bus = str(i)</span><span class="s2">,</span>
+                <span class="s1">p_nom = params[i][</span><span class="s3">&quot;capacity&quot;</span><span class="s1">][carrier]</span><span class="s2">,</span>
+                <span class="s1">marginal_cost = params[i][</span><span class="s3">&quot;cost&quot;</span><span class="s1">][carrier]</span><span class="s2">,</span>
+
+                <span class="s0"># control = &quot;PV&quot;,</span>
+              <span class="s1">)</span>
+<span class="s1">n.add(</span><span class="s3">&quot;Line&quot;</span><span class="s2">, </span><span class="s1">bus0 = </span><span class="s3">&quot;ZA&quot;</span><span class="s2">, </span><span class="s1">bus1 = </span><span class="s3">&quot;MZ&quot;</span><span class="s2">, </span><span class="s1">name=</span><span class="s3">&quot;ZA_MZ&quot;</span><span class="s2">, </span><span class="s1">s_nom = ZA_MZ)</span>
+<span class="s1">n.add(</span><span class="s3">&quot;Line&quot;</span><span class="s2">, </span><span class="s1">bus0 = </span><span class="s3">&quot;ZA&quot;</span><span class="s2">, </span><span class="s1">bus1 = </span><span class="s3">&quot;SZ&quot;</span><span class="s2">, </span><span class="s1">name=</span><span class="s3">&quot;ZA_SZ&quot;</span><span class="s2">, </span><span class="s1">s_nom = ZA_SZ)</span>
+<span class="s1">n.add(</span><span class="s3">&quot;Line&quot;</span><span class="s2">, </span><span class="s1">bus0 = </span><span class="s3">&quot;MZ&quot;</span><span class="s2">, </span><span class="s1">bus1 = </span><span class="s3">&quot;SZ&quot;</span><span class="s2">, </span><span class="s1">name=</span><span class="s3">&quot;MZ_SZ&quot;</span><span class="s2">, </span><span class="s1">s_nom = MZ_SZ)</span>
+<span class="s1">n.plot(bus_sizes=</span><span class="s4">1</span><span class="s2">, </span><span class="s1">margin=</span><span class="s4">1</span><span class="s1">)</span>
+
+<span class="s1">n.generators[</span><span class="s3">&quot;marginal_cost&quot;</span><span class="s1">]</span>
+
+
+<span class="s0">#%% md 
+</span><span class="s1">#### [2 points] (c) Check that bothmodels yield the same generator dispatch, objective function, andmarket prices. 
+</span><span class="s0">#%% 
+</span></pre>
+</body>
+</html>
