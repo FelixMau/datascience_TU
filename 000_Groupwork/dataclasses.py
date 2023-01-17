@@ -1,10 +1,9 @@
-from dataclasses import dataclass, field
-
-import rasterio
 import country_converter as coco
 import geopandas as gpd
 import pandas as pd
-import os
+import rasterio
+
+from dataclasses import dataclass, field
 
 """
 Data-adapters to read and partially preprocess Data for PyPsa, Geopandas and other necesary operations
@@ -19,8 +18,6 @@ classes:
 """
 
 cc = coco.CountryConverter()
-
-
 
 @dataclass()
 class marine_regions:
