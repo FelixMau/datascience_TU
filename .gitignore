@@ -1,2 +1,4 @@
-
+000_Groupwork/assignment-4-data/*
 .idea/vcs.xml
+*.csv
+exportToHTML
