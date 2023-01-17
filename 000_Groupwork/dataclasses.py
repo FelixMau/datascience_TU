@@ -4,6 +4,7 @@ import rasterio
 import country_converter as coco
 import geopandas as gpd
 import pandas as pd
+import os
 
 """
 Data-adapters to read and partially preprocess Data for PyPsa, Geopandas and other necesary operations
@@ -143,13 +144,51 @@ class glc:
     name: str
 
 
+@dataclass(frozen=True)
+class global_power_plants:
+    """
+    Dataclass for global powerplants
+    *Attributes:
+        -country_name = Name of country
+        -dta = Pandas Dataframe with country specific Data
+
+    *functions:
+        -filter = takes filter dictionary {"columname":"keyword to search for"} and returns filtered Dataframe
+    """
+    country_name:str = "Germany"
+    data_path: str = "assignment-4-data/global-power-plant-database/global_power_plant_database_v_1_3/global_power_plant_database.csv"
+    dta: pd.DataFrame = field(init=False)
+
+    def __post_init__(self)-> None:
+        # Rewriting country-name to match columns
+        object.__setattr__(self, "country_name", cc.convert(names=self.country_name, to="ISO3"))
+        # Setting dta to country Dataframe
+        object.__setattr__(self, "dta",
+                       pd.read_csv(self.data_path, index_col="gppd_idnr").query(f"country == '{self.country_name}'"),
+                       index_col="gppd_idnr")
+
+    def filter(self, filter: dict = None)->list[pd.DataFrame]:
+        filtered = []
+        for col, filter_kw in filter.items():
+            filtered = filtered.append(self.dta.query(f"{col} == '{filter_kw}'"))
+        return filtered
+
+@dataclass(frozen=True)
+class roads_and_airports:
+    country_name: str = "Germany"
+    data_path: str = "assignment-4-data/ne_10m_roads.gpkg"
+    dta: gpd.GeoDataFrame = field(init=False)
+
+    def __post_init__(self) -> None:
+        # Rewriting country-name to match columns
+        object.__setattr__(self, "country_name", cc.convert(names=self.country_name, to="ISO3"))
+        # Setting dta to country Dataframe
+        object.__setattr__(self, "dta",
+                           gpd.read_file(self.data_path, geometry="geometry"))
+
+
 def main():
-    loads = load_series()
-    print(loads.sort_and_filter())
-    admin_region = gadm()
-    print(admin_region.gadm_gdf)
-
-
+    pass
 
 if __name__ == "__main__":
     main()
