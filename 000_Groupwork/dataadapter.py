@@ -8,6 +8,9 @@ import pandas as pd
 """
 Data-adapters to read and partially preprocess Data for PyPsa, Geopandas and other necesary operations
 
+refactors figures to match units
+refactors map projections to unify
+
 classes: 
     - marine_regions: 
     - world_protected_areas

@@ -1,1 +1,29 @@
 # Containing model configuration
+
+-eligible_land_classes_for_expansion:
+  -solar: ["abc", "def"]
+  -wind_onshore: []
+  -wind_offshore: []
+
+-distance_criteria:
+  -roads: 100
+  -airports: 100
+
+-renewable_data:
+  -solar:
+    -power_per_m2:
+      -unit: "MW/m2"
+      -amount: 3
+    -more_data: 100
+
+  -wind:
+    -power_per_m2:
+      -unit: "MW/m2"
+      -amount: 3
+
+    -height: 100,
+
+
+
+
+
