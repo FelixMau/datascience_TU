@@ -1,20 +1,19 @@
-import country_converter as coco
-import geopandas as gpd
-import pandas as pd
-import rasterio
-import pypsa
 from pprint import pprint
 
-from dataclasses import dataclass, field
-import dataclasses
+import pandas as pd
+import pypsa
 
+import dataclasses
+from dataclasses import dataclass, field
 from mapper import ATTRIBUTEMAPPER
 
-@dataclass(frozen = True,  order=True)
+
+@dataclass(frozen=True, order=True)
 class BUS:
     name: str = "BUS"
+
     def add_to_network(self, network: pypsa.Network, **kwargs):
-        keywords = {ATTRIBUTEMAPPER[name] : value for name, value in dataclasses.asdict(self).items()}
+        keywords = {ATTRIBUTEMAPPER[name]: value for name, value in dataclasses.asdict(self).items()}
         network.add(class_name="Bus", name=getattr(self, "name"))
 
 
@@ -31,11 +30,12 @@ class DISPATCHABLE:
     p_unit: str = "MW"
 
     def add_to_network(self, network: pypsa.Network, **kwargs):
-        keywords = {ATTRIBUTEMAPPER[name] : value for name, value in dataclasses.asdict(self).items()}
+        keywords = {ATTRIBUTEMAPPER[name]: value for name, value in dataclasses.asdict(self).items()}
         keywords.pop("name")
-        network.generators.loc[getattr(self, "name")+str(1),:] = keywords
+        network.generators.loc[getattr(self, "name") + str(1), :] = keywords
 
-@dataclass(frozen = True, order=True)
+
+@dataclass(frozen=True, order=True)
 class VOLATILE:
     name: str
     bus: str
@@ -48,6 +48,7 @@ class VOLATILE:
     carrier: str = "n/a"
     p_unit: str = "MW"
 
+
 @dataclass(frozen=True, order=True)
 class STORAGE_UNIT:
     name: str
@@ -57,7 +58,7 @@ class STORAGE_UNIT:
     p_max_pu: pd.Series(float)
     lifetime: int
     max_hours: float
-    capital_cost: float = field(init = False)
+    capital_cost: float = field(init=False)
     type: str = "n/a"
     carrier: str = "n/a"
     p_unit: str = "MW"
