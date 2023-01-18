@@ -8,22 +8,13 @@ from pprint import pprint
 from dataclasses import dataclass, field
 import dataclasses
 
-MAPPER = {"name":"name",
-          "bus": "bus",
-          "p_nom": "p_nom",
-            "marginal_costs": "marginal_costs",
-            "lifetime": "lifetime",
-            "capital_cost": "capital_cost",
-            "type":"type",
-            "carrier":"type",
-            "p_unit":"p_unit",
-          }
+from mapper import ATTRIBUTEMAPPER
 
 @dataclass(frozen = True,  order=True)
 class BUS:
     name: str = "BUS"
     def add_to_network(self, network: pypsa.Network, **kwargs):
-        keywords = {MAPPER[name] : value for name, value in dataclasses.asdict(self).items()}
+        keywords = {ATTRIBUTEMAPPER[name] : value for name, value in dataclasses.asdict(self).items()}
         network.add(class_name="Bus", name=getattr(self, "name"))
 
 
@@ -40,7 +31,7 @@ class DISPATCHABLE:
     p_unit: str = "MW"
 
     def add_to_network(self, network: pypsa.Network, **kwargs):
-        keywords = {MAPPER[name] : value for name, value in dataclasses.asdict(self).items()}
+        keywords = {ATTRIBUTEMAPPER[name] : value for name, value in dataclasses.asdict(self).items()}
         keywords.pop("name")
         network.generators.loc[getattr(self, "name")+str(1),:] = keywords
 
