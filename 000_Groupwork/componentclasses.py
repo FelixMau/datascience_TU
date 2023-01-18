@@ -3,8 +3,8 @@ from pprint import pprint
 import pandas as pd
 import pypsa
 
-import dataclasses
-from dataclasses import dataclass, field
+import input_dataclasses
+from input_dataclasses import dataclass, field
 from mapper import ATTRIBUTEMAPPER
 
 
@@ -32,7 +32,8 @@ class DISPATCHABLE:
     def add_to_network(self, network: pypsa.Network, **kwargs):
         keywords = {ATTRIBUTEMAPPER[name]: value for name, value in dataclasses.asdict(self).items()}
         keywords.pop("name")
-        network.generators.loc[getattr(self, "name") + str(1), :] = keywords
+        #network.generators.loc[getattr(self, "name") + str(1), :] = keywords
+        network.add(class_name="Generator", name=getattr(self, "name"), kwargs=keywords)
 
 
 @dataclass(frozen=True, order=True)

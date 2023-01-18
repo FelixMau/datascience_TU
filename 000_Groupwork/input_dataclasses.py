@@ -3,7 +3,7 @@ import geopandas as gpd
 import pandas as pd
 import rasterio
 
-from dataclasses import dataclass, field
+from input_dataclasses import dataclass, field
 
 """
 Data-adapters to read and partially preprocess Data for PyPsa, Geopandas and other necesary operations
