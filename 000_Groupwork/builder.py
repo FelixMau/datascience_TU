@@ -6,7 +6,14 @@ import pypsa
 import json
 import input_dataclasses
 
-def get_value():
+
+def expansion_limit(component_type):
+    # Todo: Get Component limits either from geographical limits or yaml
+
+
+def get_value(component_type, parameter_name, value):
+    # Todo: Get the value for component type. Lookup in config with component_tye (config),
+    #  parameter_name(config and pypsa) and value (config/component_type/parameters/parameter_name)
     pass
 
 def build_components(config_dir: str, power_plant_data: input_dataclasses.global_power_plants, expansion_limits: pd.DataFrame):
@@ -16,22 +23,24 @@ def build_components(config_dir: str, power_plant_data: input_dataclasses.global
         config = json.loads(f)
     for component_type in config["components"]:
         # This loop iterates though every forseen component type
-        # Todo: global_power_plants needs a function to filter for the Data.
+        # Todo: global_power_plants class needs a function to filter for the Data.
         #   Config.yaml neeeds to contain information on filter data for every component type
         comps = power_plant_data.filter(component_type["filter"])
-        for comp_number, comp in enumerate(comps):
-            # Iterate over every component of the component type above
-            # Todo: Config.yaml needs to contain information about parameters/attributes and the value
-            #  for this parameters for each component type
-            keyword_args = {}
-            for keyword, value in component_type["keywords"].items():
-                # keyword dict is filled with Data by using config and inputdata
-                # Todo: get_value takes the value (and more inputs) to get the value. The Value might be stored
-                #   somewhere in the inputdata or in the config file. Config file should contain information where
-                #   Data is stored
-                keyword_args[keyword] = get_value(value)
-            n.add(class_name=component_type["class_name"], name=component_type["class_name"]+str(comp_number)),
-            kwargs =
+        for region in config["regions"]:
+            for comp_number, comp in enumerate(comps):
+                # Iterate over every component of the component type above
+                # Todo: Config.yaml needs to contain information about parameters/attributes and the value
+                #  for this parameters for each component type
+                keyword_args = {}
+                for keyword, value in component_type["keywords"].items():
+                    # keyword dict is filled with Data by using config and inputdata
+                    # Todo: The class contains information on how to construct itself (post init) and the config would
+                    #   only know what class it should use now and pass the information to the class constructor
+                    #   Or using a dictionary to map to the classes? Maybe more straight forward
+                    #
+                    keyword_args[keyword] = get_value(keyword, value, component_type)
+                n.add(class_name=component_type["class_name"], name=component_type["class_name"]+str(comp_number),
+                kwargs = keyword_args)
 
 def build_model(busses, dispatchables, volatiles, storages, lines):
     network = pypsa.Network

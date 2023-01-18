@@ -9,6 +9,18 @@
   -roads: 100
   -airports: 100
 
+-components:
+  -dispatchable:
+    -parameters:
+      {class_name: "Generator",
+       p_nom:
+
+
+
+
+
+
+
 -renewable_data:
   -solar:
     -power_per_m2:
@@ -23,6 +35,7 @@
 
     -height: 100,
 
+-regions:
 
 
 

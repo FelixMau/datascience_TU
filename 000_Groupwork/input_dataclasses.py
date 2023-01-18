@@ -63,7 +63,7 @@ class world_protected_areas:
     possible functionality:
         interact with restrictions together with Protected areas, airports and roads
     """
-    country_name: str = "Germany"
+    country_name: str = "Rwanda"
     wdpa_dir: str = \
         "assignment-4-data/wdpa/"
     projection: int = 4326
@@ -86,7 +86,7 @@ class load_series:
         sort and filter:
             returns pd.Series load for country
     """
-    country_name: str = "Germany"
+    country_name: str = "Rwanda"
     gegis_dir: str = "assignment-4-data/gegis/load.csv"
     columns: list = field(init=False)
     load_series_df: pd.DataFrame = field(init=False)
@@ -122,7 +122,7 @@ class gadm:
         possible functionality:
 
         """
-    country_name: str = "Germany"
+    country_name: str = "Rwanda"
     gadm_dir: str = \
         "assignment-4-data/gadm/"
     projection: int = 4326
@@ -134,6 +134,12 @@ class gadm:
         self.country_name = cc.convert(names=self.country_name, to="ISO3")
         self.gadm_file_name = self.gadm_dir + self.gadm_file_start + self.country_name + ".gpkg"
         self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry", index_col = "GID_1")
+
+    def coordinates(self, subregion):
+        # Todo: Write functionality to return x and y from input subregion
+        x = 1
+        y= 1
+        return {"x":x, "y": y}
 
 
 @dataclass()
@@ -152,14 +158,16 @@ class global_power_plants:
     *functions:
         -filter = takes filter dictionary {"columname":"keyword to search for"} and returns filtered Dataframe
     """
-    country_name:str = "Germany"
+    country_name:str = "Rwanda"
     data_path: str = "assignment-4-data/global-power-plant-database/global_power_plant_database_v_1_3/global_power_plant_database.csv"
     dta: pd.DataFrame = field(init=False)
 
     def __post_init__(self)-> None:
+        # You may ignore strings, they look complicated but that's just due to the folder structure(:
         # Rewriting country-name to match columns
         object.__setattr__(self, "country_name", cc.convert(names=self.country_name, to="ISO3"))
         # Setting dta to country Dataframe
+
         object.__setattr__(self, "dta",
                        pd.read_csv(self.data_path, index_col="gppd_idnr").query(f"country == '{self.country_name}'"),
                        index_col="gppd_idnr")
@@ -170,9 +178,12 @@ class global_power_plants:
             filtered = filtered.append(self.dta.query(f"{col} == '{filter_kw}'"))
         return filtered
 
+    def get_value(self, index, column):
+        return
+
 @dataclass(frozen=True)
 class roads_and_airports:
-    country_name: str = "Germany"
+    country_name: str = "Rwanda"
     data_path: str = "assignment-4-data/ne_10m_roads.gpkg"
     dta: gpd.GeoDataFrame = field(init=False)
 
@@ -184,8 +195,10 @@ class roads_and_airports:
                            gpd.read_file(self.data_path, geometry="geometry"))
 
 
+
+
 def main():
-    pass
+    roads_and_airports.
 
 if __name__ == "__main__":
     main()
