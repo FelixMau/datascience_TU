@@ -2,8 +2,10 @@ from pprint import pprint
 
 import pandas as pd
 import pypsa
+import shapely
 
-from input_dataclasses import dataclass, field
+import input_dataclasses
+from dataclasses import dataclass, field
 from mapper import ATTRIBUTEMAPPER
 import dataclasses
 
@@ -11,26 +13,40 @@ import dataclasses
 
 @dataclass(frozen=True, order=True)
 class BUS:
-    name: str = "BUS"
-    x: str = field(init=False)
-    y: str = field(init=False)
+    """
+    Contains Bus information:
+        Name of the Bus (Must be Region GID 1)
+        GID_1 location of BUS
+        country location of BUS (extract from GID 1?
+
+        Function:
+            calc_crow_distance, takes another BUS class instance to return the distance between both busses
+
+    """
+    name: str # Name can be freely chosen
+    GID_1: str # GID_1 region where Bus is located
+    country: input_dataclasses.gadm # gadm class of country containing more information on administrative regions
+
 
     def __post_init__(self):
-        #Todo Get x and y values from geodataclass -> write function in inputdataclasses/gadm
+        object.__setattr__(self, "representative_point", self.country.coordinates(self.GID_1))
 
     def add_to_network(self, network: pypsa.Network, **kwargs):
         keywords = {ATTRIBUTEMAPPER[name]: value for name, value in dataclasses.asdict(self).items()}
         network.add(class_name="Bus", name=getattr(self, "name"))
 
-    def calc_crow_distance(self, another_x, another_y):
-        # For line length between busses
-        #Todo:
+    def calc_crow_distance(self, bus_region):
+        return self.country.coordinates(bus_region).distance(self.representative_point)/1e3
+
+
 
 @dataclass(frozen=True, order=True)
 class DISPATCHABLE:
-    name: str
-    bus: str
-    p_nom: float
+    name: str # Instance of global_power_plants.dta.index
+    country: input_dataclasses.gadm
+    power_plants: input_dataclasses.global_power_plants
+    bus: str = field(init=False)
+    p_nom: float = field(init=False)
     marginal_costs: float = field(init = False)
     lifetime: int = field(init = False)
     capital_cost: float = field(init = False)
@@ -38,14 +54,18 @@ class DISPATCHABLE:
     carrier: str = "n/a"
     p_unit: str = "MW"
 
-    def __post_init__(self, **kwargs):
-        # Todo: How (and from where!) are we going to construct the components?
+    def __post_init__(self):
+        object.__setattr__(self, "bus", self.country.GID_1(self.power_plants.dta.loc[self.name, "geometry"]))
+        object.__setattr__(self, "p_nom", self.power_plants.dta.loc[self.name, "capacity_mw"])
+
+        # Todo allocate source for marginal costs
+        object.__setattr__(self, "marginal_costs", self.power_plants.dta.loc[self.name, "marginal_costs"])
+
+        # Todo: Write function in powerplants to return searched value
         # Construct necesary values:
 
 
         # Construct from **kwargs:
-        for param_name , param_value in kwargs.items():
-            object.__setattr__(self, param_name, param_value)
 
 
     def add_to_network(self, network: pypsa.Network, **kwargs):
@@ -86,11 +106,21 @@ class STORAGE_UNIT:
 
 n = pypsa.Network()
 
-some_dispatchable = DISPATCHABLE(name="DSP", bus="bus0", p_nom=100, marginal_costs=10, lifetime=20,
-                                 capital_cost=5)
-some_bus = BUS(name="bus0")
+RWANDA = input_dataclasses.gadm(country_name="Rwanda")
+POWER_PLANTS = input_dataclasses.global_power_plants(country_name="Rwanda")
 
-some_bus.add_to_network(network=n)
-some_dispatchable.add_to_network(network=n)
+dispo = DISPATCHABLE(name="WRI1061143", power_plants=POWER_PLANTS, country=RWANDA)
+print(dispo.GID_1)
 
-pprint(n.generators)
+
+
+# #some_dispatchable = DISPATCHABLE(name="DSP", bus="bus0", p_nom=100)
+# rwanda = gadm(country_name="Rwanda")
+# some_bus = BUS(name="bus0", GID_1="RWA.1_1", country=rwanda)
+#
+# print(some_bus.calc_crow_distance("RWA.2_1"))
+#
+# #some_bus.add_to_network(network=n)
+# #some_dispatchable.add_to_network(network=n)
+#
+# pprint(n.generators)

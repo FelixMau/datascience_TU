@@ -5,23 +5,29 @@ import pandas as pd
 import pypsa
 import json
 import input_dataclasses
+import componentclasses
 
 
 def expansion_limit(component_type):
     # Todo: Get Component limits either from geographical limits or yaml
+    #   Shall also be added to country class?!
+    return None
 
 
-def get_value(component_type, parameter_name, value):
-    # Todo: Get the value for component type. Lookup in config with component_tye (config),
-    #  parameter_name(config and pypsa) and value (config/component_type/parameters/parameter_name)
-    pass
 
-def build_components(config_dir: str, power_plant_data: input_dataclasses.global_power_plants, expansion_limits: pd.DataFrame):
+def build_components(config_dir: str, power_plant_data: input_dataclasses.global_power_plants, expansion_limits: pd.DataFrame,
+                     country: str = "RWANDA"):
     # config contains all information necesary to build components:
     n = pypsa.Network()
     with open(config_dir, "r") as f:
         config = json.loads(f)
-    for component_type in config["components"]:
+    POWER_PLANTS = input_dataclasses.global_power_plants(country_name=country)
+    RWANDA = input_dataclasses.gadm(country_name=country)
+    for component_type in POWER_PLANTS:
+        for region in RWANDA.gadm_gdf.index:
+            componentclasses.BUS(name=region).add_to_network(n)
+
+
         # This loop iterates though every forseen component type
         # Todo: global_power_plants class needs a function to filter for the Data.
         #   Config.yaml neeeds to contain information on filter data for every component type
@@ -44,6 +50,6 @@ def build_components(config_dir: str, power_plant_data: input_dataclasses.global
 
 def build_model(busses, dispatchables, volatiles, storages, lines):
     network = pypsa.Network
-    for i in components:
-        i.add_to_network(network=network)
+    #for i in components:
+     #   i.add_to_network(network=network)
 

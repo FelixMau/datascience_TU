@@ -2,8 +2,9 @@ import country_converter as coco
 import geopandas as gpd
 import pandas as pd
 import rasterio
+import shapely
 
-from input_dataclasses import dataclass, field
+from dataclasses import dataclass, field
 
 """
 Data-adapters to read and partially preprocess Data for PyPsa, Geopandas and other necesary operations
@@ -14,7 +15,6 @@ refactors map projections to unify
 classes: 
     - marine_regions: 
     - world_protected_areas
-
 """
 
 cc = coco.CountryConverter()
@@ -125,21 +125,22 @@ class gadm:
     country_name: str = "Rwanda"
     gadm_dir: str = \
         "assignment-4-data/gadm/"
-    projection: int = 4326
-    gadm_gdf: rasterio.default_gtiff_profile = field(init=False)
+    projection: str = 4326
+    gadm_gdf: gpd.GeoDataFrame = field(init=False)
     gadm_file_name: str = field(init=False)
     gadm_file_start: str = "gadm_410-levels-ADM_1-"
 
     def __post_init__(self):
         self.country_name = cc.convert(names=self.country_name, to="ISO3")
         self.gadm_file_name = self.gadm_dir + self.gadm_file_start + self.country_name + ".gpkg"
-        self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry", index_col = "GID_1")
+        self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry").set_index("GID_1")
 
-    def coordinates(self, subregion):
-        # Todo: Write functionality to return x and y from input subregion
-        x = 1
-        y= 1
-        return {"x":x, "y": y}
+    def coordinates(self, subregion) ->shapely.geometry.point.Point:
+        projection = "ESRI:54009"
+        return self.gadm_gdf.to_crs(projection).representative_point().loc[subregion]
+    def GID_1(self, point: shapely.geometry.point.Point)->str:
+        return self.gadm_gdf.contains(point)[self.gadm_gdf.contains(point)].index[0]
+
 
 
 @dataclass()
@@ -167,10 +168,9 @@ class global_power_plants:
         # Rewriting country-name to match columns
         object.__setattr__(self, "country_name", cc.convert(names=self.country_name, to="ISO3"))
         # Setting dta to country Dataframe
-
-        object.__setattr__(self, "dta",
-                       pd.read_csv(self.data_path, index_col="gppd_idnr").query(f"country == '{self.country_name}'"),
-                       index_col="gppd_idnr")
+        df = pd.read_csv(self.data_path, index_col="gppd_idnr").query(f"country == '{self.country_name}'")
+        geometry = gpd.points_from_xy(df.longitude, df.latitude)
+        object.__setattr__(self, "dta", gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4087"))
 
     def filter(self, filter: dict = None)->list[pd.DataFrame]:
         filtered = []
@@ -192,15 +192,12 @@ class roads_and_airports:
         object.__setattr__(self, "country_name", cc.convert(names=self.country_name, to="ISO3"))
         # Setting dta to country Dataframe
         object.__setattr__(self, "dta",
-                           gpd.read_file(self.data_path, geometry="geometry"))
+                           gpd.read_file(self.data_path, geometry="geometry"), index_col="GID_1" )
 
 
 
 
-def main():
-    roads_and_airports.
 
-if __name__ == "__main__":
-    main()
+
 
 

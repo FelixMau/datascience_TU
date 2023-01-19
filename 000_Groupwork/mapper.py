@@ -13,3 +13,8 @@ ATTRIBUTEMAPPER = {
     "carrier":"type",
     "p_unit":"p_unit",
           }
+
+VALUE_CALCULATOR = {
+    "CROW_FLY_DISTANCE": " Bus.calc_crow_distance('second bus') ",
+
+}
