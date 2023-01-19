@@ -11,6 +11,7 @@ import dataclasses
 
 
 
+
 @dataclass(frozen=True, order=True)
 class BUS:
     """
@@ -41,67 +42,56 @@ class BUS:
 
 
 @dataclass(frozen=True, order=True)
-class DISPATCHABLE:
-    name: str # Instance of global_power_plants.dta.index
-    country: input_dataclasses.gadm
-    power_plants: input_dataclasses.global_power_plants
+class electric_component:
+    """
+    Parentclass for electric components (not Busses)  that are already existing
+
+
+    """
+    name: str  # Instance of global_power_plants.dta.index
+    country: input_dataclasses.gadm # country class from input_dataclasses to search for Values and to
+    # locate Powerplants to country and regions
+    power_plants: input_dataclasses.global_power_plants # global_power_plant class from input_dataclasses to get
+    # information for this electric component
+    # ToDo: To allow Investment, components it needs to be possible to add components that are NOT within the
+    #  already existing global power plants class. -> implement check if searched Index is within index
     bus: str = field(init=False)
     p_nom: float = field(init=False)
-    marginal_costs: float = field(init = False)
-    lifetime: int = field(init = False)
-    capital_cost: float = field(init = False)
+    marginal_costs: float = field(init=False)
+    lifetime: int = field(init=False)
+    capital_cost: float = field(init=False)
     type: str = "n/a"
     carrier: str = "n/a"
     p_unit: str = "MW"
 
     def __post_init__(self):
+        # Get the Bus where the powerplant is connected to (GID_1 takes point and returns GID_1 region containing point)
         object.__setattr__(self, "bus", self.country.GID_1(self.power_plants.dta.loc[self.name, "geometry"]))
         object.__setattr__(self, "p_nom", self.power_plants.dta.loc[self.name, "capacity_mw"])
 
-        # Todo allocate source for marginal costs
-        object.__setattr__(self, "marginal_costs", self.power_plants.dta.loc[self.name, "marginal_costs"])
-
-        # Todo: Write function in powerplants to return searched value
-        # Construct necesary values:
-
-
-        # Construct from **kwargs:
+        # Todo: allocate source for marginal costs and add to powerplants dta GeoDataFrame
+        #  (within global_power_plants  __post_init__)
+        # object.__setattr__(self, "marginal_costs", self.power_plants.dta.loc[self.name, "marginal_costs"])
 
 
     def add_to_network(self, network: pypsa.Network, **kwargs):
         keywords = {ATTRIBUTEMAPPER[name]: value for name, value in dataclasses.asdict(self).items()}
         keywords.pop("name")
-        #network.generators.loc[getattr(self, "name") + str(1), :] = keywords
+        # network.generators.loc[getattr(self, "name") + str(1), :] = keywords
         network.add(class_name="Generator", name=getattr(self, "name"), kwargs=keywords)
 
 
 @dataclass(frozen=True, order=True)
-class VOLATILE:
-    name: str
-    bus: str
-    p_nom: float
-    marginal_costs: float
-    p_max_pu: pd.Series(float)
-    lifetime: int
-    capital_cost: float = field(init=False)
-    type: str = "n/a"
-    carrier: str = "n/a"
-    p_unit: str = "MW"
+class DISPATCHABLE(electric_component):
+    pass
 
 
-@dataclass(frozen=True, order=True)
-class STORAGE_UNIT:
-    name: str
-    bus: str
-    p_nom: float
-    marginal_costs: float
+class VOLATILE(electric_component):
     p_max_pu: pd.Series(float)
-    lifetime: int
+
+
+class STORAGE_UNIT(electric_component):
     max_hours: float
-    capital_cost: float = field(init=False)
-    type: str = "n/a"
-    carrier: str = "n/a"
-    p_unit: str = "MW"
 
 
 n = pypsa.Network()
