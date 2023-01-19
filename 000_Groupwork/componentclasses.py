@@ -13,7 +13,7 @@ import dataclasses
 
 
 @dataclass(frozen=True, order=True)
-class BUS:
+class Bus:
     """
     Contains Bus information:
         Name of the Bus (Must be Region GID 1)
@@ -42,7 +42,7 @@ class BUS:
 
 
 @dataclass(frozen=True, order=True)
-class electric_component:
+class ElectricComponent:
     """
     Parentclass for electric components (not Busses)  that are already existing
 
@@ -51,7 +51,7 @@ class electric_component:
     name: str  # Instance of global_power_plants.dta.index
     country: input_dataclasses.gadm # country class from input_dataclasses to search for Values and to
     # locate Powerplants to country and regions
-    power_plants: input_dataclasses.global_power_plants # global_power_plant class from input_dataclasses to get
+    power_plants: input_dataclasses.GlobalPowerPlant # global_power_plant class from input_dataclasses to get
     # information for this electric component
     # ToDo: To allow Investment, components it needs to be possible to add components that are NOT within the
     #  already existing global power plants class. -> implement check if searched Index is within index
@@ -82,24 +82,26 @@ class electric_component:
 
 
 @dataclass(frozen=True, order=True)
-class DISPATCHABLE(electric_component):
+class Dispatchable(ElectricComponent):
     pass
 
 
-class VOLATILE(electric_component):
+class Volatile(ElectricComponent):
     p_max_pu: pd.Series(float)
 
 
-class STORAGE_UNIT(electric_component):
+class StorageUnit(ElectricComponent):
     max_hours: float
 
 
 n = pypsa.Network()
 
-RWANDA = input_dataclasses.gadm(country_name="Rwanda")
-POWER_PLANTS = input_dataclasses.global_power_plants(country_name="Rwanda")
+CHOSEN_COUNTRY_NAME = "Rwanda"
 
-dispo = DISPATCHABLE(name="WRI1061143", power_plants=POWER_PLANTS, country=RWANDA)
+RWANDA = input_dataclasses.gadm(country_name=CHOSEN_COUNTRY_NAME)
+POWER_PLANTS = input_dataclasses.GlobalPowerPlant(country_name=CHOSEN_COUNTRY_NAME)
+
+dispo = Dispatchable(name="WRI1061143", power_plants=POWER_PLANTS, country=RWANDA)
 print(dispo.GID_1)
 
 

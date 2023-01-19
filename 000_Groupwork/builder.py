@@ -15,17 +15,17 @@ def expansion_limit(component_type):
 
 
 
-def build_components(config_dir: str, power_plant_data: input_dataclasses.global_power_plants, expansion_limits: pd.DataFrame,
+def build_components(config_dir: str, power_plant_data: input_dataclasses.GlobalPowerPlant, expansion_limits: pd.DataFrame,
                      country: str = "RWANDA"):
     # config contains all information necesary to build components:
     n = pypsa.Network()
     with open(config_dir, "r") as f:
         config = json.loads(f)
-    POWER_PLANTS = input_dataclasses.global_power_plants(country_name=country)
+    POWER_PLANTS = input_dataclasses.GlobalPowerPlant(country_name=country)
     RWANDA = input_dataclasses.gadm(country_name=country)
     for component_type in POWER_PLANTS:
         for region in RWANDA.gadm_gdf.index:
-            componentclasses.BUS(name=region).add_to_network(n)
+            componentclasses.Bus(name=region).add_to_network(n)
 
 
         # This loop iterates though every forseen component type

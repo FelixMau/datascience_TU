@@ -149,7 +149,7 @@ class glc:
 
 
 @dataclass(frozen=True)
-class global_power_plants:
+class GlobalPowerPlant:
     """
     Dataclass for global powerplants
     *Attributes:
@@ -182,7 +182,7 @@ class global_power_plants:
         return
 
 @dataclass(frozen=True)
-class roads_and_airports:
+class RoadAndAirport:
     country_name: str = "Rwanda"
     data_path: str = "assignment-4-data/ne_10m_roads.gpkg"
     dta: gpd.GeoDataFrame = field(init=False)
