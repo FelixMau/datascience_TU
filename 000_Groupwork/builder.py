@@ -11,10 +11,10 @@ import geopandas as gpd
 from pprint import pprint
 
 # Todo: finish component mapper. Write all possible kinds of electical components (also non defined ones)
-COMPONENTS = {
-    {"column_name": "column_value", "....": "::::"}: componentclasses.Bus, ## allgemein
-    {"primary_fuel": ["Gas, Coal...."]}: componentclasses.Dispatchable  #Beispiel
-}
+# COMPONENTS = {
+#     {"column_name": "column_value", "....": "::::"}: componentclasses.Bus, ## allgemein
+#     {"primary_fuel": ["Gas, Coal...."]}: componentclasses.Dispatchable  #Beispiel
+# }
 
 def expansion_limit(component_type):
     # Todo: Get Component limits either from geographical limits or yaml

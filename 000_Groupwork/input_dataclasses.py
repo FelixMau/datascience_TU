@@ -20,7 +20,7 @@ classes:
 cc = coco.CountryConverter()
 
 @dataclass()
-class marine_regions:
+class MarineRegion:
     """
     Dataclass for marine regions
     contains Marine region information for the whole world.
@@ -49,7 +49,7 @@ class marine_regions:
 
 
 @dataclass()
-class world_protected_areas:
+class WorldProtectedAreas:
     """
     Dataclass for World protected areas
 
@@ -78,7 +78,7 @@ class world_protected_areas:
 
 
 @dataclass()
-class load_series:
+class LoadSeries:
     """
     Load series dataclass
 
@@ -144,9 +144,14 @@ class AdministrativeRegion:
 
 
 @dataclass()
-class glc:
-    name: str
+class LandCover:
+    country_name: str = "Rwanda"
+    data_path: str = field(init=False)
 
+    def __post_init__(self):
+        object.__setattr__(self, "country_name", cc.convert(self.country_name, to="ISO2"))
+        object.__setattr__(self, "data_path", f"assignment-4-data/copernicus-glc/PROBAV_LC100_global_v3.0.1_2019-nrt_Discrete-Classification-map_EPSG-4326-{self.country_name}.tif")
+        object.__setattr__(self, "land_cover", rasterio.open(self.data_path))
 
 @dataclass(frozen=True)
 class GlobalPowerPlants:
@@ -198,7 +203,45 @@ class RoadAndAirport:
                            gpd.read_file(self.data_path, geometry="geometry"), index_col="GID_1" )
 
 
+@dataclass()
+class AdministrativeRegion:
+    """
+        Dataclass for administrative regions
 
+        functions:
+            -
+        Attributes:
+            country_name: adds together with gadm_file_name and gadm_file_start to search for tif file.
+                converts automativally to ISO3
+            gadm_gdf: geopandas dataframe with level 1 region as index. For country.
+
+        possible functionality:
+
+        """
+    country_name: str = "Rwanda"
+    gadm_dir: str = \
+        "assignment-4-data/gadm/"
+    projection: str = 4326
+    gadm_gdf: gpd.GeoDataFrame = field(init=False)
+    gadm_file_name: str = field(init=False)
+    gadm_file_start: str = "gadm_410-levels-ADM_1-"
+
+    def __post_init__(self):
+        self.country_name = cc.convert(names=self.country_name, to="ISO3")
+        self.gadm_file_name = self.gadm_dir + self.gadm_file_start + self.country_name + ".gpkg"
+        self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry").set_index("GID_1")
+
+    def coordinates(self, subregion) ->shapely.geometry.point.Point:
+        projection = "ESRI:54009"
+        return self.gadm_gdf.to_crs(projection).representative_point().loc[subregion]
+    def GID_1(self, point: shapely.geometry.point.Point)->str:
+        return self.gadm_gdf.contains(point)[self.gadm_gdf.contains(point)].index[0]
+
+
+    def potential_m2(self, roads: RoadAndAirport, airports: RoadAndAirport,
+                     protected_areas: WorldProtectedAreas, land_cover: LandCover , component_type: str,
+                     ):
+        pass
 
 
 
