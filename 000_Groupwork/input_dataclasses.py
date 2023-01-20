@@ -108,7 +108,7 @@ class load_series:
         return self.load_series_df
 
 @dataclass()
-class gadm:
+class AdministrativeRegion:
     """
         Dataclass for administrative regions
 
@@ -149,7 +149,7 @@ class glc:
 
 
 @dataclass(frozen=True)
-class GlobalPowerPlant:
+class GlobalPowerPlants:
     """
     Dataclass for global powerplants
     *Attributes:
@@ -180,6 +180,9 @@ class GlobalPowerPlant:
 
     def get_value(self, index, column):
         return
+
+
+
 
 @dataclass(frozen=True)
 class RoadAndAirport:

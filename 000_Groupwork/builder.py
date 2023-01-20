@@ -6,50 +6,40 @@ import pypsa
 import json
 import input_dataclasses
 import componentclasses
+import mapper
+import geopandas as gpd
+from pprint import pprint
 
+# Todo: finish component mapper. Write all possible kinds of electical components (also non defined ones)
+COMPONENTS = {
+    {"column_name": "column_value", "....": "::::"}: componentclasses.Bus, ## allgemein
+    {"primary_fuel": ["Gas, Coal...."]}: componentclasses.Dispatchable  #Beispiel
+}
 
 def expansion_limit(component_type):
     # Todo: Get Component limits either from geographical limits or yaml
-    #   Shall also be added to country class?!
+    #   I think it would be best to implement a method within the AdministrativeRegion class that takes a
+    #   component_type and returns m^2
     return None
 
 
+# def add_component_classes_to_power_plants_gdf(GlobalPowerPlants: input_dataclasses.GlobalPowerPlants)->gpd.GeoDataFrame:
+#     gdf = GlobalPowerPlants.dta
+#
+#     gdf = gdf.apply(lambda x: print(x), axis=1)
 
-def build_components(config_dir: str, power_plant_data: input_dataclasses.GlobalPowerPlant, expansion_limits: pd.DataFrame,
-                     country: str = "RWANDA"):
-    # config contains all information necesary to build components:
+    #object.__setattr__(GlobalPowerPlants, "dta", gdf)
+
+def build_components(config_dir: str = None, expansion_limits: pd.DataFrame = None, country: str = "RWANDA"):
+    # config contains all information necessary to build components:
     n = pypsa.Network()
-    with open(config_dir, "r") as f:
-        config = json.loads(f)
-    POWER_PLANTS = input_dataclasses.GlobalPowerPlant(country_name=country)
-    RWANDA = input_dataclasses.gadm(country_name=country)
-    for component_type in POWER_PLANTS:
-        for region in RWANDA.gadm_gdf.index:
-            componentclasses.Bus(name=region).add_to_network(n)
+    power_plants = input_dataclasses.GlobalPowerPlants(country_name=country)
+    rwanda = input_dataclasses.AdministrativeRegion(country_name=country)
+    #add_component_classes_to_power_plants_gdf(power_plants)
+    for region in rwanda.gadm_gdf.index:
+        print(region)
+        componentclasses.Bus(name=region, GID_1=region, AdministrativeRegion=rwanda).add_to_network(n)
 
 
-        # This loop iterates though every forseen component type
-        # Todo: global_power_plants class needs a function to filter for the Data.
-        #   Config.yaml neeeds to contain information on filter data for every component type
-        comps = power_plant_data.filter(component_type["filter"])
-        for region in config["regions"]:
-            for comp_number, comp in enumerate(comps):
-                # Iterate over every component of the component type above
-                # Todo: Config.yaml needs to contain information about parameters/attributes and the value
-                #  for this parameters for each component type
-                keyword_args = {}
-                for keyword, value in component_type["keywords"].items():
-                    # keyword dict is filled with Data by using config and inputdata
-                    # Todo: The class contains information on how to construct itself (post init) and the config would
-                    #   only know what class it should use now and pass the information to the class constructor
-                    #   Or using a dictionary to map to the classes? Maybe more straight forward
-                    #
-                    keyword_args[keyword] = get_value(keyword, value, component_type)
-                n.add(class_name=component_type["class_name"], name=component_type["class_name"]+str(comp_number),
-                kwargs = keyword_args)
 
-def build_model(busses, dispatchables, volatiles, storages, lines):
-    network = pypsa.Network
-    #for i in components:
-     #   i.add_to_network(network=network)
-
+build_components()
