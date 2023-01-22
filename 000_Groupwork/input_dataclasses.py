@@ -133,7 +133,7 @@ class AdministrativeRegion:
     def __post_init__(self):
         self.country_name = cc.convert(names=self.country_name, to="ISO3")
         self.gadm_file_name = self.gadm_dir + self.gadm_file_start + self.country_name + ".gpkg"
-        self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry").set_index("GID_1")
+        self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry", crs ="ESRI:54009").set_index("GID_1")
 
     def coordinates(self, subregion) ->shapely.geometry.point.Point:
         projection = "ESRI:54009"
@@ -173,9 +173,11 @@ class GlobalPowerPlants:
         # Rewriting country-name to match columns
         object.__setattr__(self, "country_name", cc.convert(names=self.country_name, to="ISO3"))
         # Setting dta to country Dataframe
-        df = pd.read_csv(self.data_path, index_col="gppd_idnr").query(f"country == '{self.country_name}'")
+        df = pd.read_csv(self.data_path, index_col="gppd_idnr", low_memory=False).query(f"country == '{self.country_name}'")
         geometry = gpd.points_from_xy(df.longitude, df.latitude)
-        object.__setattr__(self, "dta", gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4087"))
+        object.__setattr__(self, "dta", gpd.GeoDataFrame(df, geometry=geometry, crs="ESRI:54009"))
+
+
 
     def filter(self, filter: dict = None)->list[pd.DataFrame]:
         filtered = []
@@ -229,17 +231,21 @@ class AdministrativeRegion:
     def __post_init__(self):
         self.country_name = cc.convert(names=self.country_name, to="ISO3")
         self.gadm_file_name = self.gadm_dir + self.gadm_file_start + self.country_name + ".gpkg"
-        self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry").set_index("GID_1")
+        self.gadm_gdf = gpd.read_file(self.gadm_file_name, geometry="geometry", crs="ESRI:54009").set_index("GID_1")
 
     def coordinates(self, subregion) ->shapely.geometry.point.Point:
         projection = "ESRI:54009"
         return self.gadm_gdf.to_crs(projection).representative_point().loc[subregion]
     def GID_1(self, point: shapely.geometry.point.Point)->str:
-        return self.gadm_gdf.contains(point)[self.gadm_gdf.contains(point)].index[0]
+        try:
+            return self.gadm_gdf.contains(point)[self.gadm_gdf.contains(point)].index[0]
+        except IndexError:
+            print(f"{self.country_name} does not contain {point}")
+
 
 
     def potential_m2(self, roads: RoadAndAirport, airports: RoadAndAirport,
-                     protected_areas: WorldProtectedAreas, land_cover: LandCover , component_type: str,
+                     protected_areas: WorldProtectedAreas, land_cover: LandCover, component_type: str,
                      ):
         pass
 

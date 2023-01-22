@@ -52,23 +52,25 @@ class ElectricComponent:
     power_plants: input_dataclasses.GlobalPowerPlants  # global_power_plant class from input_dataclasses to get
     # information for this electric component
 
-    investment: bool = False # True if this component is non-existing in the powerplant database and Investment
-    # for this component shall be evaluated
 
-    # ToDo: To allow Investment, components it needs to be possible to add components that are NOT within the
+    # ToDo: To allow Investment: need for possibility to add components that are NOT within the
     #  already existing global power plants class. -> implement check if searched Index is within index
+    #   -> then do investment stuff!
+
+    marginal_costs: float
+    lifetime: int
+    capital_cost: float
     bus: str = field(init=False)
     p_nom: float = field(init=False)
-    marginal_costs: float = field(init=False)
-    lifetime: int = field(init=False)
-    capital_cost: float = field(init=False)
-    type: str = "n/a"
+    investment: bool = False # True if this component is non-existing in the powerplant database and Investment
+    # for this component shall be evaluated
     carrier: str = "n/a"
     p_unit: str = "MW"
 
     def __post_init__(self):
         if self.investment is False:
             # Get the Bus where the powerplant is connected to (GID_1 takes point and returns GID_1 region containing point)
+            print(self.name)
             object.__setattr__(self, "bus", self.country.GID_1(self.power_plants.dta.loc[self.name, "geometry"]))
             object.__setattr__(self, "p_nom", self.power_plants.dta.loc[self.name, "capacity_mw"])
 
@@ -83,19 +85,22 @@ class ElectricComponent:
         keywords = {ATTRIBUTES[name]: value for name, value in dataclasses.asdict(self).items()}
         keywords.pop("name")
         # network.generators.loc[getattr(self, "name") + str(1), :] = keywords
-        network.add(class_name="Generator", name=getattr(self, "name"), kwargs=keywords)
-
+        network.add(class_name=self.type, name=getattr(self, "name"), kwargs=keywords)
 
 @dataclass(frozen=True, order=True)
 class Dispatchable(ElectricComponent):
+    type: str = "Generator"
+
     pass
 
 
 class Volatile(ElectricComponent):
+    type: str = "Generator"
     p_max_pu: pd.Series(float)
 
 
 class StorageUnit(ElectricComponent):
+    type: str = "Storage"
     max_hours: float
 
 #
