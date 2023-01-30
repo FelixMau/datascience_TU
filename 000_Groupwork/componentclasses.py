@@ -87,7 +87,6 @@ class ElectricComponent:
         # network.generators.loc[getattr(self, "name") + str(1), :] = keywords
         network.add(class_name=self.type, name=getattr(self, "name"), kwargs=keywords)
 
-@dataclass(frozen=True, order=True)
 class Dispatchable(ElectricComponent):
     type: str = "Generator"
 

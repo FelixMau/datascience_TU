@@ -12,9 +12,9 @@ from pprint import pprint
 
 
 # Todo: finish component mapper. Write all possible kinds of electrical components (also non defined ones)
-def return_component_object(primary_fuel, name, power_plants: input_dataclasses.GlobalPowerPlants.country_name,
-                            administrative_region: input_dataclasses.AdministrativeRegion, config_yaml_dir: str = None,
-                            ) -> componentclasses.ElectricComponent:
+def component_object(primary_fuel, name, power_plants: input_dataclasses.GlobalPowerPlants.country_name,
+                     administrative_region: input_dataclasses.AdministrativeRegion, config_yaml_dir: str = None,
+                     ) -> componentclasses.ElectricComponent:
 
     # ToDo: Diese test_kwargs sollten aus einer config datei kommen um Code und Daten/Config besser zu trennen!
     #   -Auch eine Quelle für die Daten (lifetime und kosten) fehlt noch, diese hier sind ausgedacht^^
@@ -49,27 +49,21 @@ def expansion_limit(component_type):
     return None
 
 
-# def add_component_classes_to_power_plants_gdf(GlobalPowerPlants: input_dataclasses.GlobalPowerPlants)->gpd.GeoDataFrame:
-#     gdf = GlobalPowerPlants.dta
-#
-#     gdf = gdf.apply(lambda x: print(x), axis=1)
-
-# object.__setattr__(GlobalPowerPlants, "dta", gdf)
-
 def build_components(config_dir: str = None, expansion_limits: pd.DataFrame = None, country: str = "RWANDA"):
-    # config contains all information necessary to build components:
+    # Building components from input_dataclasses, componentclasses and config
     n = pypsa.Network()
     power_plants = input_dataclasses.GlobalPowerPlants(country_name=country)
     rwanda = input_dataclasses.AdministrativeRegion(country_name=country)
-    # add_component_classes_to_power_plants_gdf(power_plants)
-    plant_df = power_plants.dta
-    plant_df["class"] = plant_df.apply(lambda x: return_component_object(primary_fuel=x["primary_fuel"],
-                                                                         power_plants=power_plants,
-                                                                         administrative_region=rwanda,
-                                                                         name=x.name),axis=1)
-    print(plant_df)
+    # Adding a Bus for each region (one for each region since we only have one carrier (electricity)
+    # (could be more for monitoring comodities as well)
     for region in rwanda.gadm_gdf.index:
         componentclasses.Bus(name=region, GID_1=region, AdministrativeRegion=rwanda).add_to_network(n)
+    # Add existing PowerPlants
+    plant_df = power_plants.dta
+    plant_df["class"] = plant_df.apply(lambda x: component_object(primary_fuel=x["primary_fuel"],
+                                                                  power_plants=power_plants,
+                                                                  administrative_region=rwanda,
+                                                                  name=x.name), axis=1)
 
 
 build_components()
